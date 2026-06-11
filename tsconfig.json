@@ -1,0 +1,12 @@
+{
+  "extends": "@tsconfig/node16",
+  "compilerOptions": {
+    "outDir": "./build",
+    "rootDir": "./src"
+  },
+  "exclude": [
+    "build",
+    "node_modules",
+    "tests/**"
+  ]
+}

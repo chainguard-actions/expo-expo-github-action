@@ -1,0 +1,24 @@
+name: Test deprecated inputs (username, password, cache keys)
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - id: action
+        uses: .
+        with:
+          expo-version: latest
+          eas-version: latest
+          expo-cache: false
+          eas-cache: false
+          patch-watchers: false
+          username: fake-user
+          password: fake-password
+          expo-cache-key: custom-expo-cache-key
+          eas-cache-key: custom-eas-cache-key
+      - name: Assert action completed without error
+        run: |
+          echo "Action completed with deprecated inputs (username, password, cache keys)"
+          echo "PASS: deprecated inputs accepted without fatal error"
