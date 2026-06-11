@@ -1,0 +1,22 @@
+name: Test eas-version input
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - id: action
+        uses: .
+        with:
+          eas-version: latest
+          eas-cache: false
+          patch-watchers: false
+      - name: Assert eas CLI is available
+        run: |
+          echo "Checking eas CLI is installed..."
+          if ! command -v eas &> /dev/null; then
+            echo "FAIL: eas CLI not found in PATH"
+            exit 1
+          fi
+          echo "PASS: eas CLI is available"
