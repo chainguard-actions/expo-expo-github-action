@@ -1,0 +1,21 @@
+name: Test token authentication input
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - id: action
+        uses: .
+        with:
+          eas-version: latest
+          eas-cache: false
+          token: fake-test-token-for-ci
+      - name: Assert EAS CLI is installed
+        run: |
+          if ! command -v eas &> /dev/null; then
+            echo "FAIL: eas CLI not found"
+            exit 1
+          fi
+          echo "PASS: eas CLI is installed"

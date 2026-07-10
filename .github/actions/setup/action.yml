@@ -1,0 +1,25 @@
+name: Setup Runtime
+description: Prepare Runtime in GitHub Actions
+
+inputs:
+  bun-version:
+    description: Version of Bun to use
+    default: latest # TODO(cedric): replace with fixed major version after fixing https://github.com/oven-sh/setup-bun/issues/37
+
+  node-version:
+    description: Version of Node to use
+    default: 24.x
+
+runs:
+  using: composite
+  steps:
+    - name: 🏗 Setup Bun
+      if: ${{ runner.os != 'Windows' }}
+      uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2
+      with:
+        bun-version: ${{ inputs.bun-version }}
+
+    - name: 🏗 Setup Node
+      uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+      with:
+        node-version: ${{ inputs.node-version }}

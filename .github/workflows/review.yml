@@ -1,0 +1,53 @@
+name: review
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    types: [opened, synchronize]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event_name }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: 🏗 Setup repo
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+
+      - name: 🏗 Setup runner
+        uses: ./.github/actions/setup
+
+      - name: 📦 Install dependencies
+        run: bun install
+
+      - name: ✅ Lint code
+        run: bun run lint --max-warnings=0
+
+      - name: 🧪 Test code
+        run: bun run test
+
+      - name: 👷 Build code
+        run: bun run clean && bun run build
+
+      - name: 🕵️ Validate build
+        id: diff
+        run: |
+          if [ "$(git diff --ignore-space-at-eol build/ | wc -l)" -gt "0" ]; then
+            echo "⚠️ Build is outdated"
+            echo "    > run 'bun run clean', 'bun run build', and commit changes"
+            git diff
+            exit 1
+          fi
+
+      - name: 🗂 Upload build
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        if: ${{ failure() && steps.diff.conclusion == 'failure' }}
+        with:
+          name: build
+          path: build/

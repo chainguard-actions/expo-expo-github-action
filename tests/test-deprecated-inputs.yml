@@ -1,0 +1,33 @@
+name: Test deprecated inputs
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - id: action
+        uses: .
+        with:
+          eas-version: latest
+          eas-cache: false
+          expo-version: latest
+          expo-cache: false
+          username: fake-test-user
+          password: fake-test-password
+          eas-cache-key: custom-eas-cache-key
+          expo-cache-key: custom-expo-cache-key
+      - name: Assert EAS CLI is installed
+        run: |
+          if ! command -v eas &> /dev/null; then
+            echo "FAIL: eas CLI not found"
+            exit 1
+          fi
+          echo "PASS: eas CLI is installed"
+      - name: Assert Expo CLI is installed
+        run: |
+          if ! command -v expo &> /dev/null; then
+            echo "FAIL: expo CLI not found"
+            exit 1
+          fi
+          echo "PASS: expo CLI is installed"
