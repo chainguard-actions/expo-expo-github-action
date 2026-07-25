@@ -8,7 +8,7 @@
 
 **Test Policy SHA:** `843adf9e4b8f85d0c08b27b9d0b09dd094b54702`
 
-**Harden Agent Version:** `1`
+**Harden Agent Version:** `2`
 
 Action **expo--expo-github-action/9.0.0** was hardened automatically. 4 finding(s) were identified and resolved across 2 iteration(s).
 
@@ -16,45 +16,23 @@ Action **expo--expo-github-action/9.0.0** was hardened automatically. 4 finding(
 
 ### unpinned-uses (severity: high)
 
-All three workflow files reference external actions using mutable version tags (@v4, @v7) instead of pinned 40-character SHA commits. This exposes the workflow to supply-chain attacks if the upstream action tag is moved. Failing references include: actions/checkout@v4, actions/github-script@v7, actions/upload-artifact@v4.
+Multiple workflow files use mutable version-tag refs instead of pinned 40-character SHA commit hashes, making them vulnerable to supply-chain attacks. release.yml: actions/checkout@v4 (x3), actions/github-script@v7 (x1). review.yml: actions/checkout@v4, actions/upload-artifact@v4. test.yml: actions/checkout@v4 (x3), actions/github-script@v7 (x6).
 
 Locations:
 
 - `.github/workflows/release.yml:22`
-- `.github/workflows/release.yml:36`
-- `.github/workflows/release.yml:52`
-- `.github/workflows/release.yml:72`
-- `.github/workflows/review.yml:16`
-- `.github/workflows/review.yml:36`
-- `.github/workflows/test.yml:36`
-- `.github/workflows/test.yml:55`
-- `.github/workflows/test.yml:100`
-- `.github/workflows/test.yml:120`
-- `.github/workflows/test.yml:152`
-- `.github/workflows/test.yml:172`
-- `.github/workflows/test.yml:200`
-- `.github/workflows/test.yml:230`
-- `.github/workflows/test.yml:250`
-
-### script-injection (severity: high)
-
-Sub-rule (a): A ${{ }} expression is interpolated directly inside a run: shell command. In release.yml, the 'Update tags' step uses: `run: git tag --force v${{ steps.version.outputs.result }} && git push --force --tags`. The value of steps.version.outputs.result is injected directly into the shell command string without quoting or env-var indirection, enabling shell metacharacter injection if the step output contains special characters.
-
-Locations:
-
-- `.github/workflows/release.yml:80`
-
-### hardcoded-credentials (severity: high)
-
-A literal non-expression token value 'badtoken' is assigned to the 'github-token' input in test.yml. The pattern `github-token: badtoken` matches the hardcoded credentials check (token name with a literal alphanumeric value that is not a ${{ secrets.* }} expression).
-
-Locations:
-
-- `.github/workflows/test.yml:252`
+- `.github/workflows/release.yml:40`
+- `.github/workflows/release.yml:64`
+- `.github/workflows/release.yml:81`
+- `.github/workflows/review.yml:18`
+- `.github/workflows/review.yml:43`
+- `.github/workflows/test.yml:39`
+- `.github/workflows/test.yml:63`
+- `.github/workflows/test.yml:213`
 
 ### missing-permissions (severity: medium)
 
-None of the three workflow files (release.yml, review.yml, test.yml) define a top-level `permissions:` block, and no individual job within any of these files defines a `permissions:` block either. Without explicit permissions, workflows run with the default (potentially broad) GITHUB_TOKEN permissions, violating the principle of least privilege.
+None of the three workflow files define a top-level permissions: block, and no individual job defines job-level permissions either. Without explicit permissions, workflows run with the default (potentially broad) GITHUB_TOKEN permissions.
 
 Locations:
 
@@ -62,25 +40,49 @@ Locations:
 - `.github/workflows/review.yml:1`
 - `.github/workflows/test.yml:1`
 
+### script-injection (severity: high)
+
+GitHub Actions expressions are interpolated directly inside run: shell command strings (sub-rule a). (1) release.yml line 99: `run: git tag --force v${{ steps.version.outputs.result }} && git push --force --tags` injects a steps.*.outputs.* value directly into the shell. (2) test.yml line 83: `eas init --id ${{ secrets.EXPO_PROJECT_ID }} --force --non-interactive` interpolates a secrets context expression directly in a run: block.
+
+Locations:
+
+- `.github/workflows/release.yml:99`
+- `.github/workflows/test.yml:83`
+
+### hardcoded-credentials (severity: high)
+
+test.yml contains a hardcoded literal token value: `github-token: badtoken`. This is a non-expression literal (not a ${{ secrets.* }} reference) assigned to a field named github-token, matching the pattern token: [A-Za-z0-9]{8+}.
+
+Locations:
+
+- `.github/workflows/test.yml:248`
+
 ## Iteration Notes
 
 ### Iteration 1
 
-**Fixes applied:** unpinned-uses, script-injection, hardcoded-credentials, missing-permissions
+**Fixes applied:** unpinned-uses, missing-permissions, script-injection, hardcoded-credentials
 
 **Notes:**
 
 Fixed all four findings across release.yml, review.yml, and test.yml:
-1. unpinned-uses: Pinned all external actions to full 40-char SHAs with tag comments: actions/checkout@v4 → @34e114876b0b11c390a56381ad16ebd13914f8d5, actions/github-script@v7 → @f28e40c7f34bde8b3046d885e986cb6290c5673b, actions/upload-artifact@v4 → @ea165f8d65b6e75b540449e92b4886f43607fa02.
-2. script-injection: In release.yml 'Update tags' step, moved ${{ steps.version.outputs.result }} into an env var VERSION and used "v${VERSION}" in the shell command.
-3. hardcoded-credentials: In test.yml, replaced literal 'badtoken' with ${{ secrets.GITHUB_TOKEN }}.
-4. missing-permissions: Added top-level permissions blocks to all three files: release.yml gets 'contents: write' (needed for git push/tags), review.yml and test.yml get 'contents: read'.
+
+1. unpinned-uses: Pinned all action references to full SHA commits with tag comments: actions/checkout@v4 → @11d5960a326750d5838078e36cf38b85af677262, actions/github-script@v7 → @f28e40c7f34bde8b3046d885e986cb6290c5673b, actions/upload-artifact@v4 → @ea165f8d65b6e75b540449e92b4886f43607fa02.
+
+2. missing-permissions: Added top-level permissions blocks — release.yml gets `contents: write` (needs to push tags), review.yml and test.yml get `contents: read`.
+
+3. script-injection: (a) release.yml: moved `${{ steps.version.outputs.result }}` into env var VERSION_RESULT and used `"v${VERSION_RESULT}"` in the shell run. (b) test.yml: moved `${{ secrets.EXPO_PROJECT_ID }}` into env var EXPO_PROJECT_ID and used `"$EXPO_PROJECT_ID"` in the eas init command.
+
+4. hardcoded-credentials: Replaced `github-token: badtoken` in test.yml with `github-token: ${{ secrets.GITHUB_TOKEN }}` to use a proper secret reference.
 
 ### Iteration 2
 
-**Fixes applied:** script-injection, unpinned-uses
+**Fixes applied:** unpinned-uses
 
 **Notes:**
 
-Fixed two findings: (1) script-injection in .github/workflows/test.yml line 91 — moved `${{ secrets.EXPO_PROJECT_ID }}` out of the `run:` shell string into an `env:` block as `EXPO_PROJECT_ID`, referenced as `"$EXPO_PROJECT_ID"` in the shell command; (2) unpinned-uses in .github/actions/setup/action.yml — pinned `oven-sh/setup-bun@v2` to SHA `0c5077e51419868618aeaa5fe8019c62421857d6` and `actions/setup-node@v4` to SHA `49933ea5288caeca8642d1e84afbd3f7d6820020`, with original tags preserved as comments.
+Pinned both external action references in hardened/action/.github/actions/setup/action.yml:
+- `oven-sh/setup-bun@v2` → `oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2`
+- `actions/setup-node@v4` → `actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4`
+Original version tags preserved as inline comments for readability.
 

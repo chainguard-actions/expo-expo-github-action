@@ -1,4 +1,4 @@
-name: Test token authentication input
+name: Test deprecated cache key inputs
 on:
   workflow_dispatch:
 jobs:
@@ -11,8 +11,9 @@ jobs:
         with:
           expo-version: latest
           eas-version: latest
-          token: fake-expo-token-for-testing
-      - name: Assert action completed
+          expo-cache-key: custom-expo-cache-key
+          eas-cache-key: custom-eas-cache-key
+      - name: Assert action completed with deprecated cache key inputs
         run: |
-          echo "Action completed with token input"
+          echo "Action completed with deprecated cache key inputs"
           echo "PASS"

@@ -22,7 +22,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: 🏗 Setup repo
-        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
 
       - name: 🏗 Setup runner
         uses: ./.github/actions/setup
@@ -40,7 +40,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: 🏗 Setup repo
-        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
           token: ${{ secrets.EXPOBOT_GITHUB_TOKEN }}
 
@@ -64,7 +64,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: 🏗 Setup repo
-        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
           token: ${{ secrets.EXPOBOT_GITHUB_TOKEN }}
 
@@ -100,5 +100,5 @@ jobs:
 
       - name: 📋 Update tags
         env:
-          VERSION: ${{ steps.version.outputs.result }}
-        run: git tag --force "v${VERSION}" && git push --force --tags
+          VERSION_RESULT: ${{ steps.version.outputs.result }}
+        run: git tag --force "v${VERSION_RESULT}" && git push --force --tags
