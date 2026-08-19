@@ -1,0 +1,34 @@
+name: Test EAS CLI installation with yarn packager
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - name: Ensure yarn is available
+        run: |
+          if ! command -v yarn &> /dev/null; then
+            npm install -g yarn
+          fi
+          yarn --version
+      - id: action
+        uses: .
+        with:
+          eas-version: latest
+          packager: yarn
+          patch-watchers: false
+      - name: Assert EAS CLI is installed via yarn
+        run: |
+          echo "Checking EAS CLI installation..."
+          if ! command -v eas &> /dev/null; then
+            echo "FAIL: eas command not found"
+            exit 1
+          fi
+          EAS_VERSION=$(eas --version 2>&1 || true)
+          echo "EAS version: $EAS_VERSION"
+          if [ -z "$EAS_VERSION" ]; then
+            echo "FAIL: eas --version returned empty output"
+            exit 1
+          fi
+          echo "PASS: EAS CLI is installed via yarn"

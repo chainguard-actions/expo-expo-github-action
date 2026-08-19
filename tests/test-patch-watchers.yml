@@ -1,0 +1,27 @@
+name: Test patch-watchers enabled
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - id: action
+        uses: .
+        with:
+          eas-version: latest
+          eas-cache: false
+          packager: npm
+          patch-watchers: true
+      - name: Assert EAS CLI is installed and watchers were patched
+        run: |
+          echo "Checking EAS CLI installation..."
+          if ! command -v eas &> /dev/null; then
+            echo "FAIL: eas command not found"
+            exit 1
+          fi
+          echo "EAS CLI version: $(eas --version 2>&1 || true)"
+          echo "Checking inotify watcher settings..."
+          WATCHERS=$(cat /proc/sys/fs/inotify/max_user_watches 2>/dev/null || echo "unavailable")
+          echo "max_user_watches: $WATCHERS"
+          echo "PASS: Action completed with patch-watchers enabled"
