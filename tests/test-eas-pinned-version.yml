@@ -1,0 +1,30 @@
+name: Test EAS CLI pinned version installation
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - id: action
+        uses: .
+        with:
+          eas-version: 3.0.0
+          eas-cache: false
+          packager: npm
+          patch-watchers: false
+      - name: Assert EAS CLI version 3.0.0 is installed
+        run: |
+          echo "Checking EAS CLI version..."
+          if ! command -v eas &> /dev/null; then
+            echo "FAIL: eas command not found in PATH"
+            exit 1
+          fi
+          EAS_VERSION=$(eas --version 2>&1 || true)
+          echo "EAS version output: $EAS_VERSION"
+          if echo "$EAS_VERSION" | grep -q "3.0.0"; then
+            echo "PASS: EAS CLI 3.0.0 is installed"
+          else
+            echo "FAIL: Expected EAS CLI 3.0.0 but got: $EAS_VERSION"
+            exit 1
+          fi

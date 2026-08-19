@@ -1,0 +1,97 @@
+name: release
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      release:
+        description: 'type "release" to create the release (main branch only)'
+        required: false
+
+concurrency:
+  group: release
+  cancel-in-progress: true
+
+permissions:
+  contents: write
+
+jobs:
+  dryrun:
+    if: ${{ github.ref != 'refs/heads/main' || github.event.inputs.release != 'release' }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: 🏗 Setup repo
+        uses: actions/checkout@a37ce9120846195fa4ece8f58b268e6043cb2f26 # v3
+
+      - name: 🏗 Setup Node
+        uses: actions/setup-node@3235b876344d2a9aa001b8d1453c930bba69e610 # v3
+        with:
+          node-version: 16.x
+          cache: yarn
+
+      - name: 📦 Install dependencies
+        run: yarn install --frozen-lockfile
+
+      - name: 📋 Dry-running release
+        run: yarn semantic-release --dry-run
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+
+  publish:
+    if: ${{ github.ref == 'refs/heads/main' && github.event.inputs.release == 'release' }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: 🏗 Setup repo
+        uses: actions/checkout@a37ce9120846195fa4ece8f58b268e6043cb2f26 # v3
+
+      - name: 🏗 Setup Node
+        uses: actions/setup-node@3235b876344d2a9aa001b8d1453c930bba69e610 # v3
+        with:
+          node-version: 16.x
+          cache: yarn
+
+      - name: 📦 Install dependencies
+        run: yarn install --frozen-lockfile
+
+      - name: 📋 Release code
+        run: yarn semantic-release
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+
+  tags:
+    needs: publish
+    runs-on: ubuntu-latest
+    steps:
+      - name: 🏗 Setup repo
+        uses: actions/checkout@a37ce9120846195fa4ece8f58b268e6043cb2f26 # v3
+
+      - name: 🏗 Setup Node
+        uses: actions/setup-node@3235b876344d2a9aa001b8d1453c930bba69e610 # v3
+        with:
+          node-version: 16.x
+          cache: yarn
+
+      - name: 📦 Install dependencies
+        run: yarn install --frozen-lockfile
+
+      - name: 📦 Install semver
+        run: yarn add --dev semver
+
+      - name: 🕵️ Resolve major version
+        uses: actions/github-script@d7906e4ad0b1822421a7e6a35d5ca353c962f410 # v6
+        id: version
+        with:
+          result-encoding: string
+          script: |
+            const semver = require('semver')
+            const { version } = require('./package.json')
+            return semver.major(version)
+
+      - name: 🧹 Clean repo
+        run: git clean . -xdf && git reset --hard HEAD && git pull && git fetch --tags
+
+      - name: 📋 Update tags
+        env:
+          VERSION_RESULT: ${{ steps.version.outputs.result }}
+        run: git tag --force "v${VERSION_RESULT}" && git push --force --tags
