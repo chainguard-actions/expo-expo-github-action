@@ -1,0 +1,250 @@
+name: test
+
+on:
+  schedule:
+    - cron: '0 15 * * *'
+  push:
+    branches: [main]
+  pull_request:
+    types: [opened, synchronize]
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event_name }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+env:
+  hasAuth: ${{ !!secrets.EXPO_TOKEN }}
+
+jobs:
+  setup:
+    strategy:
+      matrix:
+        os: [ubuntu, windows, macos]
+        cache: [cache, no-cache]
+        packager: [bun, npm, yarn]
+        exclude:
+          # Mac can't unpack caches that fast
+          - os: macos
+            cache: cache
+          # Windows can't unpack caches that fast
+          - os: windows
+            cache: cache
+          # Bun isn't supported on Windows (yet)
+          - os: windows
+            packager: bun
+    runs-on: ${{ matrix.os }}-latest
+    steps:
+      - name: 🏗 Setup repo
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+
+      - name: 🏗 Setup runner
+        uses: ./.github/actions/setup
+
+      - name: 🏗 Setup Expo
+        uses: ./
+        with:
+          eas-version: latest
+          eas-cache: ${{ matrix.cache == 'cache' }}
+          expo-version: latest
+          expo-cache: ${{ matrix.cache == 'cache' }}
+          packager: ${{ matrix.packager }}
+          token: ${{ secrets.EXPO_TOKEN }}
+
+      - name: 🧪 EAS installed
+        run: eas --version
+
+      - name: 🧪 EAS authenticated
+        if: ${{ env.hasAuth == 'true' }}
+        run: eas whoami
+
+      - name: 🧪 Expo installed
+        run: expo --version
+
+      - name: 🧪 Expo authenticated
+        if: ${{ env.hasAuth == 'true' }}
+        run: expo whoami
+
+  preview:
+    runs-on: ubuntu-latest
+    steps:
+      - name: 🏗 Setup repo
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+
+      - name: 🏗 Setup runner
+        uses: ./.github/actions/setup
+
+      - name: 🏗 Setup EAS
+        uses: ./
+        with:
+          eas-version: latest
+          packager: bun
+          token: ${{ secrets.EXPO_TOKEN }}
+
+      - name: 🏗 Setup project
+        run: bun create expo ./temp --template blank
+
+      - name: 👷 Configure project
+        working-directory: ./temp
+        env:
+          EXPO_PROJECT_ID: ${{ secrets.EXPO_PROJECT_ID }}
+        run: |
+          eas init --id "$EXPO_PROJECT_ID" --force --non-interactive
+          echo $(jq '.expo.runtimeVersion.policy = "sdkVersion"' app.json) > app.json
+          echo $(jq '.expo.scheme = ["expogithubaction", "ega"]' app.json) > app.json
+
+      - name: 🚀 Create preview (without comment)
+        if: ${{ env.hasAuth == 'true' }}
+        uses: ./preview
+        id: no-comment
+        env:
+          EXPO_TEST_GITHUB_PULL: 206
+        with:
+          working-directory: ./temp
+          command: eas update --branch test --message "This is a test"
+          comment: false
+
+      - name: 🧪 Comment has content
+        if: ${{ env.hasAuth == 'true' }}
+        uses: actions/github-script@f28e40c7f34bde8b3046d885e986cb6290c5673b # v7
+        with:
+          script: |
+            const comment = `${{ steps.no-comment.outputs.comment }}`
+            if (!comment) {
+              console.log({ comment });
+              throw new Error('Message output is empty');
+            }
+
+      - name: 🚀 Create preview (single QR)
+        if: ${{ env.hasAuth == 'true' }}
+        id: single-qr
+        uses: ./preview
+        env:
+          EXPO_TEST_GITHUB_PULL: 206
+        with:
+          working-directory: ./temp
+          command: eas update --branch test --message "This is a test"
+          comment-id: 'projectId:{projectId} single-qr'
+
+      - name: 🧪 Single QR has content
+        if: ${{ env.hasAuth == 'true' }}
+        uses: actions/github-script@f28e40c7f34bde8b3046d885e986cb6290c5673b # v7
+        with:
+          script: |
+            const comment = `${{ steps.single-qr.outputs.comment }}`
+            if (!comment) {
+              console.log({ comment });
+              throw new Error('Message output is empty');
+            }
+
+      - name: 👷 Configure runtime versions
+        working-directory: ./temp
+        run: |
+          echo $(jq 'del(.expo.runtimeVersion)' app.json) > app.json
+          echo $(jq '.expo.android.runtimeVersion.policy = "sdkVersion"' app.json) > app.json
+          echo $(jq '.expo.ios.runtimeVersion.policy = "appVersion"' app.json) > app.json
+          echo $(jq '.expo.scheme = "expogithubaction"' app.json) > app.json
+
+      - name: 🚀 Create preview (multi QR)
+        if: ${{ env.hasAuth == 'true' }}
+        id: multi-qr
+        uses: ./preview
+        env:
+          EXPO_TEST_GITHUB_PULL: 206
+        with:
+          working-directory: ./temp
+          command: eas update --branch test --message "This is a test"
+          comment-id: 'projectId:{projectId} multi-qr'
+
+      - name: 🧪 Multi QR has content
+        if: ${{ env.hasAuth == 'true' }}
+        uses: actions/github-script@f28e40c7f34bde8b3046d885e986cb6290c5673b # v7
+        with:
+          script: |
+            const comment = `${{ steps.multi-qr.outputs.comment }}`
+            if (!comment) {
+              console.log({ comment });
+              throw new Error('Message output is empty');
+            }
+
+      - name: 🚀 Create preview (with custom app scheme)
+        if: ${{ env.hasAuth == 'true' }}
+        uses: ./preview
+        id: custom-app-scheme
+        env:
+          EXPO_TEST_GITHUB_PULL: 206
+        with:
+          app-scheme: thisisacustomscheme
+          working-directory: ./temp
+          command: eas update --branch test --message "This is a test"
+          comment: false
+
+      - name: 🧪 Comment has custom app scheme
+        if: ${{ env.hasAuth == 'true' }}
+        uses: actions/github-script@f28e40c7f34bde8b3046d885e986cb6290c5673b # v7
+        with:
+          script: |
+            const comment = `${{ steps.custom-app-scheme.outputs.comment }}`
+            if (!comment || !comment.includes('thisisacustomscheme')) {
+              console.log({ comment });
+              throw new Error('Message output does not include the app scheme from action input');
+            }
+
+  preview-comment:
+    runs-on: ubuntu-latest
+    steps:
+      - name: 🏗 Setup repo
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+
+      - name: 🏗 Setup runner
+        uses: ./.github/actions/setup
+
+      - name: 🏗 Setup Expo
+        uses: ./
+        with:
+          eas-version: latest
+          expo-version: latest
+          packager: bun
+          token: ${{ secrets.EXPO_TOKEN }}
+
+      - name: 🏗 Setup project
+        run: bun create expo ./temp --template blank
+
+      - name: 🧪 Without commenting
+        if: ${{ env.hasAuth == 'true' }}
+        uses: ./preview-comment
+        id: preview
+        with:
+          project: ./temp
+          comment: false
+
+      - name: 🧪 Output has content
+        if: ${{ env.hasAuth == 'true' }}
+        uses: actions/github-script@f28e40c7f34bde8b3046d885e986cb6290c5673b # v7
+        with:
+          script: |
+            const message = `${{ steps.preview.outputs.message }}`
+            if (!message) throw new Error('Message output is empty')
+
+      - name: 🧪 Comment on PR (github-token)
+        if: ${{ env.hasAuth == 'true' }}
+        uses: ./preview-comment
+        env:
+          EXPO_TEST_GITHUB_PULL: 149
+        with:
+          project: ./temp
+          channel: test
+
+      - name: 🧪 Comment on PR (GITHUB_TOKEN)
+        if: ${{ env.hasAuth == 'true' }}
+        uses: ./preview-comment
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          EXPO_TEST_GITHUB_PULL: 149
+        with:
+          project: ./temp
+          channel: test
+          github-token: ${{ secrets.GITHUB_TOKEN }}
