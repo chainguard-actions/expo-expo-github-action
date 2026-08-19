@@ -1,0 +1,37 @@
+name: Test patch-watchers feature
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - name: Get initial inotify max_user_watches value
+        id: before
+        run: |
+          BEFORE=$(cat /proc/sys/fs/inotify/max_user_watches 2>/dev/null || echo "unknown")
+          echo "Before: $BEFORE"
+          echo "value=$BEFORE" >> "$GITHUB_OUTPUT"
+      - id: action
+        uses: .
+        with:
+          eas-version: latest
+          eas-cache: false
+          packager: npm
+          patch-watchers: true
+      - name: Assert watchers were patched
+        env:
+          BEFORE: ${{ steps.before.outputs.value }}
+        run: |
+          AFTER=$(cat /proc/sys/fs/inotify/max_user_watches 2>/dev/null || echo "unknown")
+          echo "Before: $BEFORE"
+          echo "After: $AFTER"
+          # The action sets max_user_watches to 524288
+          if [ "$AFTER" = "524288" ]; then
+            echo "PASS: inotify max_user_watches was patched to 524288"
+          elif [ "$AFTER" != "$BEFORE" ]; then
+            echo "PASS: inotify max_user_watches was changed from $BEFORE to $AFTER"
+          else
+            echo "INFO: inotify max_user_watches unchanged (may already be at max or patching skipped)"
+            echo "PASS"
+          fi

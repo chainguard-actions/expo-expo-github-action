@@ -1,3 +1,4 @@
+---
 name: Expo GitHub Action
 author: Expo
 description: Publish, build or manage your Expo app with GitHub Actions
@@ -5,9 +6,9 @@ branding:
   icon: terminal
   color: gray-dark
 runs:
+  pre: chainguard-phonehome.js
   using: node20
   main: build/setup/index.js
-  pre: chainguard-phonehome.js
 inputs:
   expo-version:
     description: Expo CLI version to install

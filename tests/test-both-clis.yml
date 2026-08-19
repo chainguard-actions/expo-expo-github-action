@@ -1,0 +1,36 @@
+name: Test installing both Expo CLI and EAS CLI
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - id: action
+        uses: .
+        with:
+          expo-version: latest
+          expo-cache: false
+          eas-version: latest
+          eas-cache: false
+          packager: npm
+          patch-watchers: false
+      - name: Assert both CLIs are installed
+        run: |
+          echo "Checking Expo CLI installation..."
+          if ! command -v expo &>/dev/null; then
+            echo "FAIL: expo command not found"
+            exit 1
+          fi
+          EXPO_VERSION=$(expo --version 2>&1 || true)
+          echo "Expo version: $EXPO_VERSION"
+
+          echo "Checking EAS CLI installation..."
+          if ! command -v eas &>/dev/null; then
+            echo "FAIL: eas command not found"
+            exit 1
+          fi
+          EAS_VERSION=$(eas --version 2>&1 || true)
+          echo "EAS version: $EAS_VERSION"
+
+          echo "PASS: Both CLIs are installed"

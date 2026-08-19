@@ -1,0 +1,42 @@
+name: Test EAS CLI installation with npm packager
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    env:
+      RUNNER_TEMP: /tmp/runner/temp
+      RUNNER_TOOL_CACHE: /tmp/runner/tool-cache
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - name: Ensure runner directories exist
+        run: |
+          mkdir -p "$RUNNER_TEMP"
+          mkdir -p "$RUNNER_TOOL_CACHE"
+      - id: action
+        uses: .
+        with:
+          eas-version: "latest"
+          eas-cache: "false"
+          patch-watchers: "false"
+          packager: npm
+      - name: Assert EAS CLI is installed via npm
+        run: |
+          echo "Checking eas CLI (installed via npm)..."
+          echo "RUNNER_TOOL_CACHE: $RUNNER_TOOL_CACHE"
+          echo "PATH: $PATH"
+          if command -v eas &>/dev/null; then
+            VERSION=$(eas --version 2>&1 || true)
+            echo "eas version: $VERSION"
+            echo "PASS: eas CLI is available in PATH when installed via npm"
+          else
+            EAS_BIN=$(find "$RUNNER_TOOL_CACHE" -name "eas" -type f 2>/dev/null | head -1)
+            if [ -n "$EAS_BIN" ]; then
+              echo "PASS: eas binary found at $EAS_BIN (installed via npm)"
+            else
+              echo "FAIL: eas CLI not found in PATH or tool cache"
+              echo "Tool cache contents:"
+              ls -la "$RUNNER_TOOL_CACHE" 2>/dev/null || echo "(empty or not found)"
+              exit 1
+            fi
+          fi
