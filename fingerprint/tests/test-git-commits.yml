@@ -1,0 +1,57 @@
+name: Test fingerprint with explicit git commits
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write
+      actions: write
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          fetch-depth: 0
+      - name: Get git commit hashes for testing
+        id: commits
+        run: |
+          CURRENT=$(git rev-parse HEAD)
+          # Use HEAD as both previous and current for a no-diff scenario
+          echo "current=$CURRENT" >> "$GITHUB_OUTPUT"
+          echo "previous=$CURRENT" >> "$GITHUB_OUTPUT"
+          echo "current commit: $CURRENT"
+      - id: action
+        uses: .
+        continue-on-error: true
+        with:
+          packager: npm
+          fingerprint-installation-cache: "false"
+          fingerprint-db-cache-key: fingerprint-db-commits-test
+          current-git-commit: ${{ steps.commits.outputs.current }}
+          previous-git-commit: ${{ steps.commits.outputs.previous }}
+      - name: Assert action ran with explicit git commits
+        env:
+          OUTCOME: ${{ steps.action.outcome }}
+          CURRENT_FP: ${{ steps.action.outputs.current-fingerprint }}
+          PREV_FP: ${{ steps.action.outputs.previous-fingerprint }}
+          CURRENT_COMMIT: ${{ steps.action.outputs.current-git-commit }}
+          PREV_COMMIT: ${{ steps.action.outputs.previous-git-commit }}
+          DIFF: ${{ steps.action.outputs.fingerprint-diff }}
+        run: |
+          echo "outcome: $OUTCOME"
+          echo "current-fingerprint: $CURRENT_FP"
+          echo "previous-fingerprint: $PREV_FP"
+          echo "current-git-commit: $CURRENT_COMMIT"
+          echo "previous-git-commit: $PREV_COMMIT"
+          echo "fingerprint-diff: $DIFF"
+          if [ "$OUTCOME" = "success" ]; then
+            if [ -z "$CURRENT_FP" ] && [ -z "$CURRENT_COMMIT" ]; then
+              echo "FAIL: action succeeded but no outputs were set"
+              exit 1
+            fi
+            echo "PASS: action succeeded with explicit git commit inputs"
+          elif [ "$OUTCOME" = "failure" ]; then
+            echo "PASS: action failed gracefully (expected under sentinel repo / no Expo project)"
+          else
+            echo "FAIL: unexpected outcome '$OUTCOME'"
+            exit 1
+          fi

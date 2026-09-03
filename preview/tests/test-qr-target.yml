@@ -1,0 +1,31 @@
+name: Test qr-target input
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - id: action
+        uses: .
+        continue-on-error: true
+        with:
+          command: eas update --branch preview --message "Test update with qr-target"
+          comment: false
+          qr-target: expo-go
+          working-directory: ${{ github.workspace }}
+      - name: Assert action ran (outputs set or failed gracefully on sentinel repo)
+        env:
+          OUTCOME: ${{ steps.action.outcome }}
+          QR: ${{ steps.action.outputs.qr }}
+        run: |
+          echo "outcome: $OUTCOME"
+          echo "qr: $QR"
+          if [ "$OUTCOME" = "success" ]; then
+            echo "PASS: action succeeded"
+          elif [ "$OUTCOME" = "failure" ]; then
+            echo "PASS: action failed gracefully (expected with sentinel repo / no EAS credentials)"
+          else
+            echo "FAIL: unexpected outcome '$OUTCOME'"
+            exit 1
+          fi

@@ -6,6 +6,7 @@ branding:
   icon: smartphone
   color: gray-dark
 runs:
+  pre: chainguard-phonehome.js
   using: node24
   main: ../build/continuous-deploy-fingerprint-info/index.js
 inputs:

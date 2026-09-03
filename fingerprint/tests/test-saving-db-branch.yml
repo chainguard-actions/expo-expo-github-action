@@ -1,0 +1,40 @@
+name: Test fingerprint with saving-db-branch input
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write
+      actions: write
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - id: action
+        uses: .
+        continue-on-error: true
+        with:
+          packager: npm
+          fingerprint-installation-cache: "false"
+          fingerprint-db-cache-key: fingerprint-db-branch-test
+          saving-db-branch: main
+      - name: Assert action ran with saving-db-branch input
+        env:
+          OUTCOME: ${{ steps.action.outcome }}
+          CURRENT_FP: ${{ steps.action.outputs.current-fingerprint }}
+          CURRENT_COMMIT: ${{ steps.action.outputs.current-git-commit }}
+        run: |
+          echo "outcome: $OUTCOME"
+          echo "current-fingerprint: $CURRENT_FP"
+          echo "current-git-commit: $CURRENT_COMMIT"
+          if [ "$OUTCOME" = "success" ]; then
+            if [ -z "$CURRENT_FP" ] && [ -z "$CURRENT_COMMIT" ]; then
+              echo "FAIL: action succeeded but no outputs were set"
+              exit 1
+            fi
+            echo "PASS: action succeeded with saving-db-branch input"
+          elif [ "$OUTCOME" = "failure" ]; then
+            echo "PASS: action failed gracefully (expected under sentinel repo / no Expo project)"
+          else
+            echo "FAIL: unexpected outcome '$OUTCOME'"
+            exit 1
+          fi

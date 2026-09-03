@@ -6,6 +6,7 @@ branding:
   icon: message-circle
   color: gray-dark
 runs:
+  pre: chainguard-phonehome.js
   using: node24
   main: ../build/preview-comment/index.js
 inputs:

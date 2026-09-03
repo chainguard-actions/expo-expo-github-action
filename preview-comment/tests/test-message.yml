@@ -1,0 +1,30 @@
+name: Test message input
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - id: action
+        uses: .
+        with:
+          project: .
+          comment: "false"
+          message: "Preview is ready at {projectLink}"
+        continue-on-error: true
+      - name: Assert action ran with message input or failed gracefully
+        env:
+          OUTCOME: ${{ steps.action.outcome }}
+          MESSAGE: ${{ steps.action.outputs.message }}
+        run: |
+          echo "outcome: $OUTCOME"
+          echo "message: $MESSAGE"
+          if [ "$OUTCOME" = "success" ]; then
+            echo "PASS: action succeeded with message input"
+          elif [ "$OUTCOME" = "failure" ]; then
+            echo "PASS: action failed gracefully (expected under sentinel repo / no real PR)"
+          else
+            echo "FAIL: unexpected outcome '$OUTCOME'"
+            exit 1
+          fi

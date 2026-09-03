@@ -6,7 +6,6 @@ branding:
   icon: terminal
   color: gray-dark
 runs:
-  pre: chainguard-phonehome.js
   using: node24
   main: build/setup/index.js
 inputs:

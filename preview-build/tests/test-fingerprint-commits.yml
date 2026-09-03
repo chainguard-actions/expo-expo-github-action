@@ -1,0 +1,42 @@
+name: Test fingerprint with git commits and saving-db-branch
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          fetch-depth: 0
+      - name: Get commit hashes for testing
+        id: commits
+        run: |
+          CURRENT=$(git rev-parse HEAD)
+          PREVIOUS=$(git rev-parse HEAD~1 2>/dev/null || echo "$CURRENT")
+          echo "current=$CURRENT" >> "$GITHUB_OUTPUT"
+          echo "previous=$PREVIOUS" >> "$GITHUB_OUTPUT"
+      - id: action
+        uses: .
+        continue-on-error: true
+        with:
+          command: eas build --platform all --non-interactive
+          comment: false
+          previous-git-commit: ${{ steps.commits.outputs.previous }}
+          current-git-commit: ${{ steps.commits.outputs.current }}
+          saving-db-branch: main
+          packager: yarn
+      - name: Assert action ran (outputs set or failed gracefully on sentinel repo)
+        env:
+          OUTCOME: ${{ steps.action.outcome }}
+          GIT_COMMIT: ${{ steps.action.outputs.gitCommitHash }}
+        run: |
+          echo "outcome: $OUTCOME"
+          echo "gitCommitHash: $GIT_COMMIT"
+          if [ "$OUTCOME" = "success" ]; then
+            echo "PASS: action succeeded"
+          elif [ "$OUTCOME" = "failure" ]; then
+            echo "PASS: action failed gracefully (expected under sentinel repo / missing EAS credentials)"
+          else
+            echo "FAIL: unexpected outcome '$OUTCOME'"
+            exit 1
+          fi

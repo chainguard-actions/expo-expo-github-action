@@ -1,0 +1,15 @@
+{
+  "status": "unbundlable",
+  "entries": [
+    {
+      "path": "../build/fingerprint/index.js",
+      "status": "unbundlable",
+      "reason": "entry path is absolute or escapes the action root"
+    },
+    {
+      "path": "../build/fingerprint-post/index.js",
+      "status": "unbundlable",
+      "reason": "entry path is absolute or escapes the action root"
+    }
+  ]
+}
