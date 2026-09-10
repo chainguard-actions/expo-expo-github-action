@@ -2,6 +2,7 @@
   "owner": "expo",
   "repo": "expo-github-action",
   "version": "9.0.0",
+  "path": "fingerprint",
   "commit_sha": "eab7a230208c952974db8c3245cfd78402c7b385",
   "url": "https://github.com/expo/expo-github-action",
   "policy_sha": "d636be7e43ef829af6e853da6b3c7566db9f72fe",

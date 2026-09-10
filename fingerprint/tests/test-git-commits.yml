@@ -4,53 +4,54 @@ on:
 jobs:
   test:
     runs-on: ubuntu-latest
-    permissions:
-      pull-requests: write
-      actions: write
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           fetch-depth: 0
-      - name: Get git commit hashes for testing
+
+      - name: Get commit hashes for testing
         id: commits
         run: |
           CURRENT=$(git rev-parse HEAD)
-          # Use HEAD as both previous and current for a no-diff scenario
+          # Use HEAD~1 if available, otherwise use HEAD for both
+          if git rev-parse HEAD~1 >/dev/null 2>&1; then
+            PREVIOUS=$(git rev-parse HEAD~1)
+          else
+            PREVIOUS=$CURRENT
+          fi
           echo "current=$CURRENT" >> "$GITHUB_OUTPUT"
-          echo "previous=$CURRENT" >> "$GITHUB_OUTPUT"
+          echo "previous=$PREVIOUS" >> "$GITHUB_OUTPUT"
           echo "current commit: $CURRENT"
+          echo "previous commit: $PREVIOUS"
+
       - id: action
         uses: .
         continue-on-error: true
         with:
           packager: npm
-          fingerprint-installation-cache: "false"
-          fingerprint-db-cache-key: fingerprint-db-commits-test
+          fingerprint-installation-cache: false
           current-git-commit: ${{ steps.commits.outputs.current }}
           previous-git-commit: ${{ steps.commits.outputs.previous }}
-      - name: Assert action ran with explicit git commits
+
+      - name: Assert action ran with explicit commits or failed gracefully
         env:
           OUTCOME: ${{ steps.action.outcome }}
           CURRENT_FP: ${{ steps.action.outputs.current-fingerprint }}
-          PREV_FP: ${{ steps.action.outputs.previous-fingerprint }}
           CURRENT_COMMIT: ${{ steps.action.outputs.current-git-commit }}
-          PREV_COMMIT: ${{ steps.action.outputs.previous-git-commit }}
-          DIFF: ${{ steps.action.outputs.fingerprint-diff }}
+          PREVIOUS_COMMIT: ${{ steps.action.outputs.previous-git-commit }}
         run: |
           echo "outcome: $OUTCOME"
           echo "current-fingerprint: $CURRENT_FP"
-          echo "previous-fingerprint: $PREV_FP"
           echo "current-git-commit: $CURRENT_COMMIT"
-          echo "previous-git-commit: $PREV_COMMIT"
-          echo "fingerprint-diff: $DIFF"
+          echo "previous-git-commit: $PREVIOUS_COMMIT"
           if [ "$OUTCOME" = "success" ]; then
-            if [ -z "$CURRENT_FP" ] && [ -z "$CURRENT_COMMIT" ]; then
-              echo "FAIL: action succeeded but no outputs were set"
+            if [ -z "$CURRENT_FP" ]; then
+              echo "FAIL: action succeeded but current-fingerprint is empty"
               exit 1
             fi
-            echo "PASS: action succeeded with explicit git commit inputs"
+            echo "PASS: got current-fingerprint '$CURRENT_FP'"
           elif [ "$OUTCOME" = "failure" ]; then
-            echo "PASS: action failed gracefully (expected under sentinel repo / no Expo project)"
+            echo "PASS: action failed gracefully (expected in harness environment)"
           else
             echo "FAIL: unexpected outcome '$OUTCOME'"
             exit 1
