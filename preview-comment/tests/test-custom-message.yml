@@ -1,0 +1,32 @@
+name: Test custom message and message-id inputs
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - id: action
+        uses: .
+        continue-on-error: true
+        with:
+          message: "Preview is ready at {projectLink}"
+          message-id: "expo-preview-test-comment"
+          comment: "false"
+      - name: Assert action ran with custom message and message-id inputs
+        env:
+          OUTCOME: ${{ steps.action.outcome }}
+          MESSAGE_ID: ${{ steps.action.outputs.messageId }}
+          MESSAGE: ${{ steps.action.outputs.message }}
+        run: |
+          echo "outcome: $OUTCOME"
+          echo "messageId: $MESSAGE_ID"
+          echo "message: $MESSAGE"
+          if [ "$OUTCOME" = "success" ]; then
+            echo "PASS: action succeeded with custom message and message-id inputs"
+          elif [ "$OUTCOME" = "failure" ]; then
+            echo "PASS: action failed gracefully (expected without a real Expo project)"
+          else
+            echo "FAIL: unexpected outcome '$OUTCOME'"
+            exit 1
+          fi

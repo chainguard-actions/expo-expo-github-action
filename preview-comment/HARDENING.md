@@ -1,6 +1,6 @@
 <!-- markdownlint-disable -->
 
-# Hardening Report: expo--expo-github-action/8.0.0
+# Hardening Report: expo--expo-github-action--preview-comment/8.0.0
 
 > This file was generated automatically by the hardening agent.
 
@@ -10,5 +10,5 @@
 
 **Harden Agent Version:** `2`
 
-Action **expo--expo-github-action/8.0.0** was hardened automatically. 0 finding(s) were identified and resolved across 0 iteration(s).
+Action **expo--expo-github-action--preview-comment/8.0.0** was hardened automatically. 0 finding(s) were identified and resolved across 0 iteration(s).
 
