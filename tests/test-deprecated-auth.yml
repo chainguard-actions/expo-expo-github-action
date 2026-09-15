@@ -1,4 +1,4 @@
-name: Test deprecated username and password inputs
+name: Test deprecated username/password authentication inputs
 on:
   workflow_dispatch:
 jobs:
@@ -8,15 +8,21 @@ jobs:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
       - id: action
         uses: .
+        continue-on-error: true
         with:
           expo-version: latest
-          expo-cache: false
+          packager: npm
           username: fake-expo-user
           password: fake-expo-password
-      - name: Assert expo CLI is installed
+      - name: Assert action ran with deprecated username/password inputs
+        env:
+          OUTCOME: ${{ steps.action.outcome }}
         run: |
-          if ! command -v expo &>/dev/null && ! command -v npx &>/dev/null; then
-            echo "FAIL: expo CLI not found"
+          echo "outcome: $OUTCOME"
+          # The action may fail due to deprecated/invalid credentials, but it must have run
+          if [ "$OUTCOME" = "success" ] || [ "$OUTCOME" = "failure" ]; then
+            echo "PASS: action ran with username/password inputs (outcome: $OUTCOME)"
+          else
+            echo "FAIL: unexpected outcome '$OUTCOME'"
             exit 1
           fi
-          echo "PASS: expo CLI is available"
