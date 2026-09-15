@@ -1,4 +1,4 @@
-name: Test deprecated inputs (username, password, expo-cache-key, eas-cache-key)
+name: Test deprecated and auth inputs
 on:
   workflow_dispatch:
 jobs:
@@ -9,16 +9,19 @@ jobs:
       - id: action
         uses: .
         with:
-          expo-version: latest
-          expo-cache: false
-          expo-cache-key: my-custom-expo-cache-key
           eas-version: latest
           eas-cache: false
-          eas-cache-key: my-custom-eas-cache-key
+          eas-cache-key: custom-eas-cache-key
+          expo-cache-key: custom-expo-cache-key
+          token: fake-expo-token
           username: fake-expo-user
           password: fake-expo-password
+          packager: npm
           patch-watchers: false
-      - name: Assert action completed without error
+      - name: Assert EAS CLI is installed
         run: |
-          echo "Action completed with deprecated inputs."
-          echo "PASS"
+          if ! command -v eas &>/dev/null; then
+            echo "FAIL: eas CLI not found"
+            exit 1
+          fi
+          echo "PASS: eas CLI is installed"
