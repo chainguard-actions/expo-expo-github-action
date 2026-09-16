@@ -1,4 +1,4 @@
-name: Test Expo CLI installation
+name: Test Expo CLI Installation
 on:
   workflow_dispatch:
 jobs:
@@ -15,11 +15,15 @@ jobs:
           patch-watchers: false
       - name: Assert Expo CLI is installed
         run: |
-          echo "Checking Expo CLI installation..."
-          if ! command -v expo &> /dev/null; then
-            echo "FAIL: expo command not found in PATH"
+          echo "Checking expo CLI..."
+          if ! command -v expo &>/dev/null; then
+            echo "FAIL: expo CLI not found on PATH"
             exit 1
           fi
-          EXPO_VERSION=$(expo --version 2>&1 || true)
-          echo "Expo version: $EXPO_VERSION"
-          echo "PASS: Expo CLI is installed"
+          VERSION=$(expo --version 2>&1 || true)
+          echo "expo version: $VERSION"
+          if [ -z "$VERSION" ]; then
+            echo "FAIL: expo --version returned empty"
+            exit 1
+          fi
+          echo "PASS: expo CLI is installed"

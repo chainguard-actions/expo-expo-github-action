@@ -1,0 +1,38 @@
+name: Test with working-directory input
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Create a subdirectory to simulate an Expo app directory
+        run: |
+          mkdir -p "$GITHUB_WORKSPACE/my-expo-app"
+          echo '{"name":"my-expo-app","version":"1.0.0","expo":{"slug":"my-expo-app","version":"1.0.0"}}' \
+            > "$GITHUB_WORKSPACE/my-expo-app/app.json"
+
+      - id: action
+        uses: .
+        continue-on-error: true
+        with:
+          command: eas update --branch test --message "Test" --non-interactive
+          comment: false
+          working-directory: ${{ github.workspace }}/my-expo-app
+
+      - name: Assert action ran with working-directory (fails gracefully without EAS credentials)
+        env:
+          OUTCOME: ${{ steps.action.outcome }}
+          PROJECT_SLUG: ${{ steps.action.outputs.projectSlug }}
+        run: |
+          echo "outcome: $OUTCOME"
+          echo "projectSlug: $PROJECT_SLUG"
+          if [ "$OUTCOME" = "success" ]; then
+            echo "PASS: action succeeded"
+          elif [ "$OUTCOME" = "failure" ]; then
+            echo "PASS: action failed gracefully (expected without EAS credentials or valid Expo project)"
+          else
+            echo "FAIL: unexpected outcome '$OUTCOME'"
+            exit 1
+          fi

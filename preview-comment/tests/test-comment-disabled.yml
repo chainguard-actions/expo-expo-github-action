@@ -1,4 +1,4 @@
-name: Test basic usage
+name: Test comment disabled
 on:
   workflow_dispatch:
 jobs:
@@ -12,22 +12,29 @@ jobs:
         continue-on-error: true
         with:
           comment: "false"
+          project: "."
 
-      - name: Assert action ran (outputs set or failed gracefully on sentinel repo)
+      - name: Assert action ran with comment disabled
         env:
           OUTCOME: ${{ steps.action.outcome }}
           PROJECT_OWNER: ${{ steps.action.outputs.projectOwner }}
           PROJECT_NAME: ${{ steps.action.outputs.projectName }}
           PROJECT_SLUG: ${{ steps.action.outputs.projectSlug }}
+          PROJECT_QR: ${{ steps.action.outputs.projectQR }}
+          PROJECT_LINK: ${{ steps.action.outputs.projectLink }}
+          MESSAGE_ID: ${{ steps.action.outputs.messageId }}
           MESSAGE: ${{ steps.action.outputs.message }}
         run: |
           echo "outcome: $OUTCOME"
           echo "projectOwner: $PROJECT_OWNER"
           echo "projectName: $PROJECT_NAME"
           echo "projectSlug: $PROJECT_SLUG"
+          echo "projectQR: $PROJECT_QR"
+          echo "projectLink: $PROJECT_LINK"
+          echo "messageId: $MESSAGE_ID"
           echo "message: $MESSAGE"
           if [ "$OUTCOME" = "success" ]; then
-            echo "PASS: action succeeded"
+            echo "PASS: action succeeded with comment disabled"
           elif [ "$OUTCOME" = "failure" ]; then
             echo "PASS: action failed gracefully (expected on sentinel repo or missing Expo config)"
           else

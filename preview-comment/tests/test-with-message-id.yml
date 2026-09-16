@@ -1,4 +1,4 @@
-name: Test basic usage
+name: Test with message-id input
 on:
   workflow_dispatch:
 jobs:
@@ -12,22 +12,25 @@ jobs:
         continue-on-error: true
         with:
           comment: "false"
+          message-id: "expo-preview-test-unique-id"
 
-      - name: Assert action ran (outputs set or failed gracefully on sentinel repo)
+      - name: Assert action ran with message-id input
         env:
           OUTCOME: ${{ steps.action.outcome }}
-          PROJECT_OWNER: ${{ steps.action.outputs.projectOwner }}
-          PROJECT_NAME: ${{ steps.action.outputs.projectName }}
-          PROJECT_SLUG: ${{ steps.action.outputs.projectSlug }}
+          MESSAGE_ID: ${{ steps.action.outputs.messageId }}
           MESSAGE: ${{ steps.action.outputs.message }}
         run: |
           echo "outcome: $OUTCOME"
-          echo "projectOwner: $PROJECT_OWNER"
-          echo "projectName: $PROJECT_NAME"
-          echo "projectSlug: $PROJECT_SLUG"
+          echo "messageId: $MESSAGE_ID"
           echo "message: $MESSAGE"
           if [ "$OUTCOME" = "success" ]; then
-            echo "PASS: action succeeded"
+            echo "PASS: action succeeded with message-id input"
+            # If the action succeeded, check if messageId output is set
+            if [ -n "$MESSAGE_ID" ]; then
+              echo "PASS: messageId output is set: $MESSAGE_ID"
+            else
+              echo "INFO: messageId output is empty (may be expected without Expo config)"
+            fi
           elif [ "$OUTCOME" = "failure" ]; then
             echo "PASS: action failed gracefully (expected on sentinel repo or missing Expo config)"
           else

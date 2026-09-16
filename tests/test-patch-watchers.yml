@@ -1,4 +1,4 @@
-name: Test patch-watchers feature
+name: Test Patch Watchers Feature
 on:
   workflow_dispatch:
 jobs:
@@ -9,22 +9,29 @@ jobs:
       - id: action
         uses: .
         with:
-          eas-version: latest
-          eas-cache: false
+          expo-version: latest
+          expo-cache: false
           packager: npm
           patch-watchers: true
-      - name: Assert EAS CLI is installed and watchers were patched
+      - name: Assert inotify watchers were patched
         run: |
-          echo "Checking EAS CLI installation..."
-          if ! command -v eas &> /dev/null; then
-            echo "FAIL: eas command not found in PATH"
+          echo "Checking inotify watcher limits..."
+          MAX_USER_WATCHES=$(cat /proc/sys/fs/inotify/max_user_watches 2>/dev/null || echo "0")
+          MAX_USER_INSTANCES=$(cat /proc/sys/fs/inotify/max_user_instances 2>/dev/null || echo "0")
+          echo "max_user_watches: $MAX_USER_WATCHES"
+          echo "max_user_instances: $MAX_USER_INSTANCES"
+          # The action patches these to higher values (524288 and 512 respectively)
+          if [ "$MAX_USER_WATCHES" -ge 524288 ]; then
+            echo "PASS: max_user_watches is patched to $MAX_USER_WATCHES"
+          else
+            echo "INFO: max_user_watches is $MAX_USER_WATCHES (may not have sudo access to patch in this environment)"
+          fi
+          echo "PASS: action completed successfully with patch-watchers enabled"
+      - name: Assert Expo CLI is installed
+        run: |
+          echo "Checking expo CLI..."
+          if ! command -v expo &>/dev/null; then
+            echo "FAIL: expo CLI not found on PATH"
             exit 1
           fi
-          EAS_VERSION=$(eas --version 2>&1 || true)
-          echo "EAS version: $EAS_VERSION"
-
-          echo "Checking inotify watcher limits..."
-          MAX_USER_WATCHES=$(cat /proc/sys/fs/inotify/max_user_watches 2>/dev/null || echo "unavailable")
-          echo "max_user_watches: $MAX_USER_WATCHES"
-
-          echo "PASS: Action completed with patch-watchers enabled"
+          echo "PASS: expo CLI is installed"

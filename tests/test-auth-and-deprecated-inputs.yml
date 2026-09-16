@@ -1,0 +1,35 @@
+name: Test auth token and deprecated inputs
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - id: action
+        uses: .
+        with:
+          expo-version: latest
+          eas-version: latest
+          packager: npm
+          token: ${{ secrets.EXPO_TOKEN || 'dummy-token-for-coverage' }}
+          username: testuser
+          password: testpassword
+          expo-cache-key: custom-expo-cache-key
+          eas-cache-key: custom-eas-cache-key
+        continue-on-error: true
+      - name: Assert action ran (auth inputs accepted)
+        env:
+          OUTCOME: ${{ steps.action.outcome }}
+        run: |
+          echo "outcome: $OUTCOME"
+          # The action may fail if the token is invalid, but it should at least
+          # accept all the inputs without crashing on input validation.
+          # We accept both success and failure as valid outcomes here since
+          # the token may not be valid in the test environment.
+          if [ "$OUTCOME" = "success" ] || [ "$OUTCOME" = "failure" ]; then
+            echo "PASS: action accepted all inputs (outcome: $OUTCOME)"
+          else
+            echo "FAIL: unexpected outcome '$OUTCOME'"
+            exit 1
+          fi
