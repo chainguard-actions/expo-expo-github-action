@@ -14,23 +14,31 @@ jobs:
           eas-version: latest
           eas-cache: false
           packager: npm
-          patch-watchers: false
       - name: Assert both CLIs are installed
         run: |
           echo "Checking Expo CLI installation..."
-          if ! command -v expo &>/dev/null; then
+          if ! command -v expo &> /dev/null; then
             echo "FAIL: expo command not found"
             exit 1
           fi
           EXPO_VERSION=$(expo --version 2>&1 || true)
           echo "Expo version: $EXPO_VERSION"
+          if [ -z "$EXPO_VERSION" ]; then
+            echo "FAIL: expo --version returned empty output"
+            exit 1
+          fi
+          echo "Expo CLI check PASS"
 
           echo "Checking EAS CLI installation..."
-          if ! command -v eas &>/dev/null; then
+          if ! command -v eas &> /dev/null; then
             echo "FAIL: eas command not found"
             exit 1
           fi
           EAS_VERSION=$(eas --version 2>&1 || true)
           echo "EAS version: $EAS_VERSION"
-
+          if [ -z "$EAS_VERSION" ]; then
+            echo "FAIL: eas --version returned empty output"
+            exit 1
+          fi
+          echo "EAS CLI check PASS"
           echo "PASS: Both CLIs are installed"

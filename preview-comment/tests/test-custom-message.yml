@@ -1,4 +1,4 @@
-name: Test qr-target input
+name: Test custom message input
 on:
   workflow_dispatch:
 jobs:
@@ -10,20 +10,22 @@ jobs:
         uses: .
         continue-on-error: true
         with:
-          command: eas update --branch preview --message "Test update"
-          comment: false
-          qr-target: expo-go
-      - name: Assert action ran (qr-target input covered, graceful failure expected without real Expo project)
+          comment: "false"
+          message: "🚀 Preview is ready! Scan the QR code below."
+          message-id: "custom-message-test"
+      - name: Assert action ran with custom message input
         env:
           OUTCOME: ${{ steps.action.outcome }}
-          QR: ${{ steps.action.outputs.qr }}
+          MESSAGE: ${{ steps.action.outputs.message }}
+          PROJECT_SLUG: ${{ steps.action.outputs.projectSlug }}
         run: |
           echo "outcome: $OUTCOME"
-          echo "qr: $QR"
+          echo "message: $MESSAGE"
+          echo "projectSlug: $PROJECT_SLUG"
           if [ "$OUTCOME" = "success" ]; then
             echo "PASS: action succeeded"
           elif [ "$OUTCOME" = "failure" ]; then
-            echo "PASS: action failed gracefully (no real Expo project in harness)"
+            echo "PASS: action failed gracefully (expected under workflow_dispatch / sentinel repo)"
           else
             echo "FAIL: unexpected outcome '$OUTCOME'"
             exit 1

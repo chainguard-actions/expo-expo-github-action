@@ -6,22 +6,29 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
       - id: action
         uses: .
         continue-on-error: true
         with:
-          command: eas build --platform ios --non-interactive
+          command: "eas build --platform all --non-interactive"
+          eas-build-message: "Preview build for testing"
           comment: false
-          eas-build-message: "Preview build for PR test"
-      - name: Assert action ran and failed gracefully (no EAS credentials in harness)
+          github-token: ${{ github.token }}
+
+      - name: Assert action ran (outputs set, or failed gracefully on sentinel repo)
         env:
           OUTCOME: ${{ steps.action.outcome }}
+          PROJECT_ID: ${{ steps.action.outputs.projectId }}
+          GIT_COMMIT: ${{ steps.action.outputs.gitCommitHash }}
         run: |
           echo "outcome: $OUTCOME"
+          echo "projectId: $PROJECT_ID"
+          echo "gitCommitHash: $GIT_COMMIT"
           if [ "$OUTCOME" = "success" ]; then
-            echo "PASS: action succeeded unexpectedly (EAS credentials may be configured)"
+            echo "PASS: action succeeded"
           elif [ "$OUTCOME" = "failure" ]; then
-            echo "PASS: action failed gracefully as expected (no EAS credentials)"
+            echo "PASS: action failed gracefully (expected under sentinel repo / no EAS credentials)"
           else
             echo "FAIL: unexpected outcome '$OUTCOME'"
             exit 1

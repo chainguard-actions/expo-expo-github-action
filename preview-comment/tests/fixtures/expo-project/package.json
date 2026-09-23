@@ -1,0 +1,7 @@
+{
+  "name": "my-test-app",
+  "version": "1.0.0",
+  "dependencies": {
+    "expo": "^49.0.0"
+  }
+}

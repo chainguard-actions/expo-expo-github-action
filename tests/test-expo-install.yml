@@ -12,18 +12,17 @@ jobs:
           expo-version: latest
           expo-cache: false
           packager: npm
-          patch-watchers: false
       - name: Assert Expo CLI is installed
         run: |
           echo "Checking Expo CLI installation..."
-          if ! command -v expo &>/dev/null; then
+          if ! command -v expo &> /dev/null; then
             echo "FAIL: expo command not found"
             exit 1
           fi
           EXPO_VERSION=$(expo --version 2>&1 || true)
           echo "Expo version: $EXPO_VERSION"
           if [ -z "$EXPO_VERSION" ]; then
-            echo "FAIL: expo --version returned empty"
+            echo "FAIL: expo --version returned empty output"
             exit 1
           fi
           echo "PASS: Expo CLI is installed"

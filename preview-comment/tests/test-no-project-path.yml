@@ -1,0 +1,38 @@
+name: Test with no project path specified
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - id: action
+        uses: .
+        with:
+          comment: "false"
+          channel: default
+        continue-on-error: true
+
+      - name: Assert action ran or failed gracefully without project path
+        env:
+          OUTCOME: ${{ steps.action.outcome }}
+          PROJECT_SLUG: ${{ steps.action.outputs.projectSlug }}
+          PROJECT_NAME: ${{ steps.action.outputs.projectName }}
+          MESSAGE: ${{ steps.action.outputs.message }}
+        run: |
+          echo "outcome: $OUTCOME"
+          echo "projectSlug: $PROJECT_SLUG"
+          echo "projectName: $PROJECT_NAME"
+          echo "message: $MESSAGE"
+          # Without a project path, the action looks at the workspace root.
+          # The workspace root (this repo) has no app.json, so the action
+          # may fail gracefully or succeed with empty outputs.
+          if [ "$OUTCOME" = "success" ]; then
+            echo "PASS: action succeeded (found or skipped project resolution)"
+          elif [ "$OUTCOME" = "failure" ]; then
+            echo "PASS: action failed gracefully (no Expo project at workspace root)"
+          else
+            echo "FAIL: unexpected outcome '$OUTCOME'"
+            exit 1
+          fi

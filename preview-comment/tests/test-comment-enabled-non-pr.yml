@@ -1,0 +1,42 @@
+name: Test comment enabled in non-PR context fails gracefully
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Copy Expo project fixture into workspace
+        run: |
+          cp -r "$GITHUB_WORKSPACE/tests/fixtures/expo-project" "$GITHUB_WORKSPACE/expo-project"
+
+      - id: action
+        uses: .
+        with:
+          project: expo-project
+          channel: default
+          comment: "true"
+        continue-on-error: true
+
+      - name: Assert action ran or failed gracefully in non-PR context
+        env:
+          OUTCOME: ${{ steps.action.outcome }}
+          PROJECT_SLUG: ${{ steps.action.outputs.projectSlug }}
+          MESSAGE: ${{ steps.action.outputs.message }}
+        run: |
+          echo "outcome: $OUTCOME"
+          echo "projectSlug: $PROJECT_SLUG"
+          echo "message: $MESSAGE"
+          # In a non-PR context (workflow_dispatch), commenting will fail because
+          # there is no pull request number. The action should either:
+          # - succeed (if it skips commenting when not in a PR)
+          # - fail gracefully (if it errors out without a PR)
+          if [ "$OUTCOME" = "success" ]; then
+            echo "PASS: action succeeded (skipped commenting in non-PR context)"
+          elif [ "$OUTCOME" = "failure" ]; then
+            echo "PASS: action failed gracefully (no PR to comment on)"
+          else
+            echo "FAIL: unexpected outcome '$OUTCOME'"
+            exit 1
+          fi

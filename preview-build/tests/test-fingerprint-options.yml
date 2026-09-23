@@ -1,4 +1,4 @@
-name: Test basic usage
+name: Test fingerprint options
 on:
   workflow_dispatch:
 jobs:
@@ -6,26 +6,29 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
       - id: action
         uses: .
         continue-on-error: true
         with:
-          command: update --branch test --message "Test update"
-          comment: false
+          command: eas build --platform all --non-interactive
+          comment: "false"
+          fingerprint-version: latest
+          fingerprint-installation-cache: "false"
+          fingerprint-db-cache-key: test-fingerprint-db
           github-token: ${{ github.token }}
-      - name: Assert action ran (outputs set, or failed gracefully without EAS credentials)
+
+      - name: Assert action ran with fingerprint options
         env:
           OUTCOME: ${{ steps.action.outcome }}
-          PROJECT_ID: ${{ steps.action.outputs.projectId }}
-          PROJECT_NAME: ${{ steps.action.outputs.projectName }}
+          GIT_HASH: ${{ steps.action.outputs.gitCommitHash }}
         run: |
           echo "outcome: $OUTCOME"
-          echo "projectId: $PROJECT_ID"
-          echo "projectName: $PROJECT_NAME"
+          echo "gitCommitHash: $GIT_HASH"
           if [ "$OUTCOME" = "success" ]; then
-            echo "PASS: action succeeded"
+            echo "PASS: action succeeded with fingerprint options"
           elif [ "$OUTCOME" = "failure" ]; then
-            echo "PASS: action failed gracefully (expected without EAS credentials/project)"
+            echo "PASS: action failed gracefully (expected on sentinel repo / no EAS project)"
           else
             echo "FAIL: unexpected outcome '$OUTCOME'"
             exit 1

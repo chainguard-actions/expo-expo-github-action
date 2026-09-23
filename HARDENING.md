@@ -16,16 +16,15 @@ Action **expo--expo-github-action/8.2.1** was hardened automatically. 1 finding(
 
 ### unpinned-uses (severity: high)
 
-The composite action at .github/actions/setup/action.yml references two external actions using mutable version tags instead of pinned full-length commit SHAs. This exposes the action to supply-chain attacks if the referenced tags are moved or the upstream repositories are compromised.
-
-Failing references:
-- `uses: oven-sh/setup-bun@v1` (line ~17) — should be pinned to a full 40-character commit SHA
-- `uses: actions/setup-node@v3` (line ~21) — should be pinned to a full 40-character commit SHA
+The composite action at `.github/actions/setup/action.yml` references two external actions using mutable version tags instead of full 40-character commit SHAs. This exposes the action to supply-chain attacks where a tag could be silently moved to point to malicious code:
+- `uses: oven-sh/setup-bun@v1` (tag `v1` is mutable)
+- `uses: actions/setup-node@v3` (tag `v3` is mutable)
+These should be pinned to their full SHA digests, e.g. `uses: oven-sh/setup-bun@<40-char-sha> # v1`.
 
 Locations:
 
-- `.github/actions/setup/action.yml:17`
-- `.github/actions/setup/action.yml:21`
+- `.github/actions/setup/action.yml:18`
+- `.github/actions/setup/action.yml:23`
 
 ## Iteration Notes
 
@@ -35,9 +34,8 @@ Locations:
 
 **Notes:**
 
-Pinned both external action references in hardened/action/.github/actions/setup/action.yml:
+Pinned both mutable action references in hardened/action/.github/actions/setup/action.yml to full 40-character commit SHAs:
 - `oven-sh/setup-bun@v1` → `oven-sh/setup-bun@f4d14e03ff726c06358e5557344e1da148b56cf7 # v1`
 - `actions/setup-node@v3` → `actions/setup-node@3235b876344d2a9aa001b8d1453c930bba69e610 # v3`
-
-SHAs were resolved using lookup_action_sha and the original tag is preserved as a comment for readability.
+The original tag names are preserved as inline comments for readability.
 

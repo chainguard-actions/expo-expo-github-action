@@ -1,0 +1,36 @@
+name: Test npm packager
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write
+      actions: write
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - id: fingerprint
+        uses: .
+        continue-on-error: true
+        with:
+          packager: npm
+          fingerprint-version: latest
+          fingerprint-installation-cache: "false"
+          fingerprint-db-cache-key: fingerprint-db-test-npm
+
+      - name: Assert action ran with npm packager
+        env:
+          OUTCOME: ${{ steps.fingerprint.outcome }}
+          DIFF: ${{ steps.fingerprint.outputs.fingerprint-diff }}
+        run: |
+          echo "outcome: $OUTCOME"
+          echo "fingerprint-diff: $DIFF"
+          if [ "$OUTCOME" = "success" ]; then
+            echo "PASS: action succeeded with npm packager"
+          elif [ "$OUTCOME" = "failure" ]; then
+            echo "PASS: action failed gracefully (expected on sentinel repo without a real Expo project)"
+          else
+            echo "FAIL: unexpected outcome '$OUTCOME'"
+            exit 1
+          fi

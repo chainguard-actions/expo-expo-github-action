@@ -1,4 +1,4 @@
-name: Test message input
+name: Test no-comment mode
 on:
   workflow_dispatch:
 jobs:
@@ -6,24 +6,26 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
       - id: action
         uses: .
         continue-on-error: true
         with:
-          project: .
+          command: eas build --platform android --non-interactive
           comment: "false"
-          message: "Preview available at {projectLink}"
-      - name: Assert action ran with message input
+          github-token: ${{ github.token }}
+
+      - name: Assert action ran (no-comment mode)
         env:
           OUTCOME: ${{ steps.action.outcome }}
-          MESSAGE: ${{ steps.action.outputs.message }}
+          COMMENT_OUT: ${{ steps.action.outputs.comment }}
         run: |
           echo "outcome: $OUTCOME"
-          echo "message: $MESSAGE"
+          echo "comment output: $COMMENT_OUT"
           if [ "$OUTCOME" = "success" ]; then
-            echo "PASS: action succeeded with custom message template"
+            echo "PASS: action succeeded without posting a comment"
           elif [ "$OUTCOME" = "failure" ]; then
-            echo "PASS: action failed gracefully (expected under sentinel repo / no PR context)"
+            echo "PASS: action failed gracefully (expected on sentinel repo / no EAS project)"
           else
             echo "FAIL: unexpected outcome '$OUTCOME'"
             exit 1

@@ -12,18 +12,17 @@ jobs:
           eas-version: latest
           eas-cache: false
           packager: npm
-          patch-watchers: false
       - name: Assert EAS CLI is installed
         run: |
           echo "Checking EAS CLI installation..."
-          if ! command -v eas &>/dev/null; then
+          if ! command -v eas &> /dev/null; then
             echo "FAIL: eas command not found"
             exit 1
           fi
           EAS_VERSION=$(eas --version 2>&1 || true)
           echo "EAS version: $EAS_VERSION"
           if [ -z "$EAS_VERSION" ]; then
-            echo "FAIL: eas --version returned empty"
+            echo "FAIL: eas --version returned empty output"
             exit 1
           fi
           echo "PASS: EAS CLI is installed"

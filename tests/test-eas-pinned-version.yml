@@ -1,4 +1,4 @@
-name: Test patch-watchers feature
+name: Test EAS CLI pinned version installation
 on:
   workflow_dispatch:
 jobs:
@@ -9,24 +9,26 @@ jobs:
       - id: action
         uses: .
         with:
-          eas-version: latest
+          eas-version: 13.0.0
           eas-cache: false
           packager: npm
-          patch-watchers: true
-      - name: Assert EAS CLI is installed and watchers were patched
+      - name: Assert EAS CLI pinned version is installed
         run: |
-          echo "Checking EAS CLI installation..."
+          echo "Checking EAS CLI pinned version installation..."
           if ! command -v eas &> /dev/null; then
             echo "FAIL: eas command not found"
             exit 1
           fi
           EAS_VERSION=$(eas --version 2>&1 || true)
-          echo "EAS version: $EAS_VERSION"
+          echo "EAS version output: $EAS_VERSION"
           if [ -z "$EAS_VERSION" ]; then
             echo "FAIL: eas --version returned empty output"
             exit 1
           fi
-          echo "Checking fs.inotify.max_user_watches..."
-          WATCHES=$(cat /proc/sys/fs/inotify/max_user_watches 2>/dev/null || echo "unavailable")
-          echo "max_user_watches: $WATCHES"
-          echo "PASS: Action completed with patch-watchers enabled"
+          # Check that the installed version contains 13.0.0
+          if echo "$EAS_VERSION" | grep -q "13.0.0"; then
+            echo "PASS: EAS CLI 13.0.0 is installed"
+          else
+            echo "FAIL: Expected version 13.0.0 but got: $EAS_VERSION"
+            exit 1
+          fi

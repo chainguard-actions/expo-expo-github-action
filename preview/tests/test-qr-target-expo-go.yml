@@ -1,4 +1,4 @@
-name: Test message-id input
+name: Test qr-target expo-go
 on:
   workflow_dispatch:
 jobs:
@@ -10,20 +10,21 @@ jobs:
         uses: .
         continue-on-error: true
         with:
-          project: .
-          comment: "false"
-          message-id: "expo-preview-unique-id-123"
-      - name: Assert action ran with message-id input
+          command: update --branch test --message "QR target test"
+          comment: false
+          qr-target: expo-go
+          github-token: ${{ github.token }}
+      - name: Assert action ran with qr-target expo-go
         env:
           OUTCOME: ${{ steps.action.outcome }}
-          MESSAGE_ID: ${{ steps.action.outputs.messageId }}
+          QR_OUT: ${{ steps.action.outputs.qr }}
         run: |
           echo "outcome: $OUTCOME"
-          echo "messageId: $MESSAGE_ID"
+          echo "qr output: $QR_OUT"
           if [ "$OUTCOME" = "success" ]; then
-            echo "PASS: action succeeded with message-id input"
+            echo "PASS: action succeeded with qr-target=expo-go"
           elif [ "$OUTCOME" = "failure" ]; then
-            echo "PASS: action failed gracefully (expected under sentinel repo / no PR context)"
+            echo "PASS: action failed gracefully (expected without EAS credentials/project)"
           else
             echo "FAIL: unexpected outcome '$OUTCOME'"
             exit 1
