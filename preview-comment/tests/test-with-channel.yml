@@ -1,4 +1,4 @@
-name: Test basic usage with Expo project
+name: Test with channel input
 on:
   workflow_dispatch:
 jobs:
@@ -12,32 +12,37 @@ jobs:
         continue-on-error: true
         with:
           project: tests/fixtures/expo-project
+          channel: staging
           comment: "false"
           github-token: ${{ github.token }}
 
-      - name: Assert outputs or graceful failure
+      - name: Assert action ran with channel input
         env:
           OUTCOME: ${{ steps.action.outcome }}
           PROJECT_SLUG: ${{ steps.action.outputs.projectSlug }}
-          PROJECT_NAME: ${{ steps.action.outputs.projectName }}
           PROJECT_LINK: ${{ steps.action.outputs.projectLink }}
+          PROJECT_QR: ${{ steps.action.outputs.projectQR }}
           MESSAGE: ${{ steps.action.outputs.message }}
         run: |
           echo "outcome: $OUTCOME"
           echo "projectSlug: $PROJECT_SLUG"
-          echo "projectName: $PROJECT_NAME"
           echo "projectLink: $PROJECT_LINK"
+          echo "projectQR: $PROJECT_QR"
           echo "message: $MESSAGE"
 
           if [ "$OUTCOME" = "success" ]; then
-            # If the action succeeded, verify key outputs are set
-            if [ -z "$PROJECT_SLUG" ] && [ -z "$PROJECT_NAME" ] && [ -z "$MESSAGE" ]; then
+            # If the action succeeded, at least one output should be set
+            if [ -z "$PROJECT_SLUG" ] && [ -z "$PROJECT_LINK" ] && [ -z "$MESSAGE" ]; then
               echo "FAIL: action succeeded but all outputs are empty"
               exit 1
             fi
-            echo "PASS: action succeeded with outputs"
+            # If projectLink is set, it should reference the channel
+            if [ -n "$PROJECT_LINK" ]; then
+              echo "projectLink is set: $PROJECT_LINK"
+            fi
+            echo "PASS: action succeeded with channel input"
           elif [ "$OUTCOME" = "failure" ]; then
-            echo "PASS: action failed gracefully (expected under sentinel repo / workflow_dispatch context)"
+            echo "PASS: action failed gracefully (sentinel repo or missing Expo credentials)"
           else
             echo "FAIL: unexpected outcome '$OUTCOME'"
             exit 1

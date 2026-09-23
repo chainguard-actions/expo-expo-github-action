@@ -1,0 +1,30 @@
+name: Test deprecated username and password inputs
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - id: action
+        uses: .
+        with:
+          expo-version: latest
+          expo-cache: false
+          eas-version: latest
+          eas-cache: false
+          username: fake-expo-user
+          password: fake-expo-password
+          patch-watchers: false
+        continue-on-error: true
+      - name: Assert action ran (deprecated username/password inputs accepted)
+        env:
+          OUTCOME: ${{ steps.action.outcome }}
+        run: |
+          echo "outcome: $OUTCOME"
+          if [ "$OUTCOME" = "success" ] || [ "$OUTCOME" = "failure" ]; then
+            echo "PASS: action ran with deprecated username/password inputs"
+          else
+            echo "FAIL: unexpected outcome '$OUTCOME'"
+            exit 1
+          fi

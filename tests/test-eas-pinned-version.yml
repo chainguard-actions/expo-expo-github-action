@@ -1,4 +1,4 @@
-name: Test EAS CLI installation
+name: Test EAS CLI pinned version installation
 on:
   workflow_dispatch:
 jobs:
@@ -9,11 +9,11 @@ jobs:
       - id: action
         uses: .
         with:
-          eas-version: latest
+          eas-version: 7.0.0
           eas-cache: false
           packager: npm
           patch-watchers: false
-      - name: Assert EAS CLI is installed
+      - name: Assert EAS CLI pinned version is installed
         run: |
           echo "Checking EAS CLI installation..."
           if ! command -v eas >/dev/null 2>&1; then
@@ -21,9 +21,15 @@ jobs:
             exit 1
           fi
           EAS_VERSION=$(eas --version 2>&1 || true)
-          echo "eas version: $EAS_VERSION"
+          echo "eas version output: $EAS_VERSION"
           if [ -z "$EAS_VERSION" ]; then
             echo "FAIL: eas --version returned empty output"
             exit 1
           fi
-          echo "PASS: EAS CLI is installed"
+          # Check that the installed version contains 7.0.0
+          if echo "$EAS_VERSION" | grep -q "7\.0\.0"; then
+            echo "PASS: EAS CLI 7.0.0 is installed"
+          else
+            echo "FAIL: expected version 7.0.0 but got: $EAS_VERSION"
+            exit 1
+          fi

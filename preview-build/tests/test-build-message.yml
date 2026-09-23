@@ -1,4 +1,4 @@
-name: Test basic usage - EAS build preview
+name: Test eas-build-message and comment-id inputs
 on:
   workflow_dispatch:
 jobs:
@@ -12,20 +12,24 @@ jobs:
         continue-on-error: true
         with:
           command: eas build --platform all --non-interactive
-          comment: "false"
+          comment: "true"
+          comment-id: "preview-build-{platform}"
+          eas-build-message: "Test build from CI"
           github-token: ${{ github.token }}
 
-      - name: Assert action ran and produced expected outcome
+      - name: Assert action ran with build message inputs
         env:
           OUTCOME: ${{ steps.action.outcome }}
-          PROJECT_ID: ${{ steps.action.outputs.projectId }}
-          COMMENT_OUT: ${{ steps.action.outputs.comment }}
+          COMMENT_ID: ${{ steps.action.outputs.commentId }}
+          ANDROID_BUILD_ID: ${{ steps.action.outputs.androidBuildId }}
+          IOS_BUILD_ID: ${{ steps.action.outputs.iosBuildId }}
         run: |
           echo "outcome: $OUTCOME"
-          echo "projectId: $PROJECT_ID"
-          echo "comment: $COMMENT_OUT"
+          echo "commentId: $COMMENT_ID"
+          echo "androidBuildId: $ANDROID_BUILD_ID"
+          echo "iosBuildId: $IOS_BUILD_ID"
           if [ "$OUTCOME" = "success" ]; then
-            echo "PASS: action succeeded"
+            echo "PASS: action succeeded with build message and comment-id"
           elif [ "$OUTCOME" = "failure" ]; then
             echo "PASS: action failed gracefully (expected without EAS credentials/project)"
           else

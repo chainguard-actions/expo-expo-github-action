@@ -10,21 +10,21 @@ jobs:
         uses: .
         continue-on-error: true
         with:
-          command: eas update --auto
+          command: update --branch test-branch --message "Test update"
           comment: true
-          comment-id: "expo-preview-{branch}"
-          working-directory: ${{ github.workspace }}
-      - name: Assert action ran with comment-id input (graceful failure expected without EAS credentials)
+          comment-id: "test-comment-{projectId}"
+          github-token: ${{ github.token }}
+      - name: Assert action ran (outputs set, or failed gracefully on sentinel repo)
         env:
           OUTCOME: ${{ steps.action.outcome }}
-          COMMENT_ID: ${{ steps.action.outputs.commentId }}
+          PROJECT_ID: ${{ steps.action.outputs.projectId }}
         run: |
           echo "outcome: $OUTCOME"
-          echo "commentId: $COMMENT_ID"
+          echo "projectId: $PROJECT_ID"
           if [ "$OUTCOME" = "success" ]; then
             echo "PASS: action succeeded"
           elif [ "$OUTCOME" = "failure" ]; then
-            echo "PASS: action failed gracefully (no EAS credentials / real Expo project)"
+            echo "PASS: action failed gracefully (expected under sentinel repo / missing EAS credentials)"
           else
             echo "FAIL: unexpected outcome '$OUTCOME'"
             exit 1

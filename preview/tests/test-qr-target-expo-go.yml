@@ -1,4 +1,4 @@
-name: Test message and message-id inputs
+name: Test QR target expo-go
 on:
   workflow_dispatch:
 jobs:
@@ -6,26 +6,29 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
       - id: action
         uses: .
         continue-on-error: true
         with:
-          message: "Preview is ready at {projectLink}"
-          message-id: "expo-preview-comment-test"
+          command: eas update --branch preview --message "Expo Go QR test"
           comment: "false"
-      - name: Assert action ran (outputs set, or failed gracefully on the sentinel repo)
+          qr-target: expo-go
+
+      - name: Assert action ran with expo-go qr-target (success or graceful failure)
         env:
           OUTCOME: ${{ steps.action.outcome }}
-          MESSAGE_ID: ${{ steps.action.outputs.messageId }}
-          MESSAGE: ${{ steps.action.outputs.message }}
+          QR_OUTPUT: ${{ steps.action.outputs.qr }}
         run: |
           echo "outcome: $OUTCOME"
-          echo "messageId: $MESSAGE_ID"
-          echo "message: $MESSAGE"
+          echo "qr output: $QR_OUTPUT"
           if [ "$OUTCOME" = "success" ]; then
-            echo "PASS: action succeeded"
+            echo "PASS: action succeeded with expo-go qr-target"
+            if [ -n "$QR_OUTPUT" ]; then
+              echo "QR URL: $QR_OUTPUT"
+            fi
           elif [ "$OUTCOME" = "failure" ]; then
-            echo "PASS: action failed gracefully (sentinel repo is not resolvable)"
+            echo "PASS: action failed gracefully (no EAS credentials or project configured)"
           else
             echo "FAIL: unexpected outcome '$OUTCOME'"
             exit 1

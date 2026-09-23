@@ -1,4 +1,4 @@
-name: Test with eas-build-message input
+name: Test custom inputs - working-directory and fingerprint-version
 on:
   workflow_dispatch:
 jobs:
@@ -6,29 +6,32 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Create a subdirectory to use as working-directory
+        run: mkdir -p "$GITHUB_WORKSPACE/my-app"
+
       - id: action
         uses: .
         continue-on-error: true
         with:
           command: eas build --platform ios --non-interactive
           comment: "false"
-          eas-build-message: "Preview build for PR test scenario"
+          working-directory: ${{ github.workspace }}/my-app
+          fingerprint-version: latest
+          fingerprint-installation-cache: "false"
           github-token: ${{ github.token }}
-      - name: Assert action ran with eas-build-message (outputs set or failed gracefully)
+
+      - name: Assert action ran with custom inputs
         env:
           OUTCOME: ${{ steps.action.outcome }}
-          IOS_BUILD_ID: ${{ steps.action.outputs.iosBuildId }}
-          IOS_LINK: ${{ steps.action.outputs.iosLink }}
-          IOS_APP_VERSION: ${{ steps.action.outputs.iosAppVersion }}
+          GIT_HASH: ${{ steps.action.outputs.gitCommitHash }}
         run: |
           echo "outcome: $OUTCOME"
-          echo "iosBuildId: $IOS_BUILD_ID"
-          echo "iosLink: $IOS_LINK"
-          echo "iosAppVersion: $IOS_APP_VERSION"
+          echo "gitCommitHash: $GIT_HASH"
           if [ "$OUTCOME" = "success" ]; then
-            echo "PASS: action succeeded"
+            echo "PASS: action succeeded with custom inputs"
           elif [ "$OUTCOME" = "failure" ]; then
-            echo "PASS: action failed gracefully (expected without EAS credentials or real repo)"
+            echo "PASS: action failed gracefully (expected without EAS credentials/project)"
           else
             echo "FAIL: unexpected outcome '$OUTCOME'"
             exit 1

@@ -1,0 +1,36 @@
+name: Test custom message input
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - id: action
+        uses: .
+        continue-on-error: true
+        with:
+          project: "@testuser/testproject"
+          message: "🚀 Preview is ready! Scan the QR code below."
+          comment: "false"
+      - name: Assert action ran with message input (success or graceful failure on sentinel repo)
+        env:
+          OUTCOME: ${{ steps.action.outcome }}
+          MSG: ${{ steps.action.outputs.message }}
+          PROJECT_SLUG: ${{ steps.action.outputs.projectSlug }}
+        run: |
+          echo "outcome: $OUTCOME"
+          echo "message: $MSG"
+          echo "projectSlug: $PROJECT_SLUG"
+          if [ "$OUTCOME" = "success" ]; then
+            if [ -z "$MSG" ] && [ -z "$PROJECT_SLUG" ]; then
+              echo "FAIL: action succeeded but no outputs were set"
+              exit 1
+            fi
+            echo "PASS: action succeeded with outputs"
+          elif [ "$OUTCOME" = "failure" ]; then
+            echo "PASS: action failed gracefully (expected on sentinel repo)"
+          else
+            echo "FAIL: unexpected outcome '$OUTCOME'"
+            exit 1
+          fi

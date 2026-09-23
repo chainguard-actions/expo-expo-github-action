@@ -1,0 +1,41 @@
+name: Test with custom message-id
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - id: action
+        uses: .
+        continue-on-error: true
+        with:
+          project: tests/fixtures/expo-project
+          comment: "false"
+          message-id: "expo-preview-test-unique-id"
+          github-token: ${{ github.token }}
+
+      - name: Assert messageId output reflects custom message-id
+        env:
+          OUTCOME: ${{ steps.action.outcome }}
+          MESSAGE_ID: ${{ steps.action.outputs.messageId }}
+          MESSAGE: ${{ steps.action.outputs.message }}
+        run: |
+          echo "outcome: $OUTCOME"
+          echo "messageId: $MESSAGE_ID"
+          echo "message: $MESSAGE"
+
+          if [ "$OUTCOME" = "success" ]; then
+            # If the action succeeded, messageId should be set
+            if [ -z "$MESSAGE_ID" ]; then
+              echo "FAIL: action succeeded but messageId output is empty"
+              exit 1
+            fi
+            echo "PASS: messageId is set to '$MESSAGE_ID'"
+          elif [ "$OUTCOME" = "failure" ]; then
+            echo "PASS: action failed gracefully (sentinel repo or missing Expo credentials)"
+          else
+            echo "FAIL: unexpected outcome '$OUTCOME'"
+            exit 1
+          fi

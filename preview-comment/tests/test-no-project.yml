@@ -1,4 +1,4 @@
-name: Test basic usage - EAS build preview
+name: Test with no project path
 on:
   workflow_dispatch:
 jobs:
@@ -11,23 +11,25 @@ jobs:
         uses: .
         continue-on-error: true
         with:
-          command: eas build --platform all --non-interactive
           comment: "false"
           github-token: ${{ github.token }}
 
-      - name: Assert action ran and produced expected outcome
+      - name: Assert action ran (no project path)
         env:
           OUTCOME: ${{ steps.action.outcome }}
-          PROJECT_ID: ${{ steps.action.outputs.projectId }}
-          COMMENT_OUT: ${{ steps.action.outputs.comment }}
+          PROJECT_SLUG: ${{ steps.action.outputs.projectSlug }}
+          MESSAGE: ${{ steps.action.outputs.message }}
         run: |
           echo "outcome: $OUTCOME"
-          echo "projectId: $PROJECT_ID"
-          echo "comment: $COMMENT_OUT"
+          echo "projectSlug: $PROJECT_SLUG"
+          echo "message: $MESSAGE"
+
+          # Without a project path, the action may fail to resolve project info
+          # or succeed with empty outputs — both are acceptable under the harness
           if [ "$OUTCOME" = "success" ]; then
-            echo "PASS: action succeeded"
+            echo "PASS: action succeeded (no project path, outputs may be empty)"
           elif [ "$OUTCOME" = "failure" ]; then
-            echo "PASS: action failed gracefully (expected without EAS credentials/project)"
+            echo "PASS: action failed gracefully (no project path or sentinel repo)"
           else
             echo "FAIL: unexpected outcome '$OUTCOME'"
             exit 1
