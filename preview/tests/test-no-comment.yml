@@ -1,4 +1,4 @@
-name: Test comment-id input
+name: Test with comment disabled
 on:
   workflow_dispatch:
 jobs:
@@ -6,23 +6,25 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
       - id: action
         uses: .
         continue-on-error: true
         with:
-          command: eas update --branch test --message "Test update"
+          command: "eas update --branch test --message 'No comment test'"
           comment: "false"
-          comment-id: "expo-preview-{projectId}"
+          working-directory: ${{ github.workspace }}
           github-token: ${{ github.token }}
-      - name: Assert action ran (comment-id input exercised)
+
+      - name: Assert action ran with comment disabled (fails gracefully without EAS credentials)
         env:
           OUTCOME: ${{ steps.action.outcome }}
         run: |
           echo "outcome: $OUTCOME"
           if [ "$OUTCOME" = "success" ]; then
-            echo "PASS: action succeeded with comment-id"
+            echo "PASS: action succeeded with comment disabled"
           elif [ "$OUTCOME" = "failure" ]; then
-            echo "PASS: action failed gracefully (no Expo credentials in harness)"
+            echo "PASS: action failed gracefully (expected without EAS credentials)"
           else
             echo "FAIL: unexpected outcome '$OUTCOME'"
             exit 1

@@ -1,4 +1,4 @@
-name: Test both Expo and EAS CLI installation
+name: Test installing both Expo and EAS CLIs
 on:
   workflow_dispatch:
 jobs:
@@ -9,7 +9,7 @@ jobs:
       - id: action
         uses: .
         with:
-          expo-version: latest
+          expo-version: 6.3.10
           expo-cache: false
           eas-version: latest
           eas-cache: false
@@ -17,20 +17,28 @@ jobs:
           patch-watchers: false
       - name: Assert both CLIs are installed
         run: |
-          echo "Checking Expo CLI installation..."
+          echo "Checking Expo CLI..."
           if ! command -v expo &>/dev/null; then
-            echo "FAIL: expo command not found"
+            echo "FAIL: expo CLI not found in PATH"
             exit 1
           fi
           EXPO_VERSION=$(expo --version 2>&1 || true)
           echo "Expo version: $EXPO_VERSION"
+          if [ -z "$EXPO_VERSION" ]; then
+            echo "FAIL: expo --version returned empty output"
+            exit 1
+          fi
 
-          echo "Checking EAS CLI installation..."
+          echo "Checking EAS CLI..."
           if ! command -v eas &>/dev/null; then
-            echo "FAIL: eas command not found"
+            echo "FAIL: eas CLI not found in PATH"
             exit 1
           fi
           EAS_VERSION=$(eas --version 2>&1 || true)
           echo "EAS version: $EAS_VERSION"
+          if [ -z "$EAS_VERSION" ]; then
+            echo "FAIL: eas --version returned empty output"
+            exit 1
+          fi
 
           echo "PASS: Both CLIs are installed"

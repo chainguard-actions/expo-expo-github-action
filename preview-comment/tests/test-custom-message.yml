@@ -1,4 +1,4 @@
-name: Test custom message and message-id inputs
+name: Test preview-comment with custom message template
 on:
   workflow_dispatch:
 jobs:
@@ -6,27 +6,41 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
       - id: action
         uses: .
         continue-on-error: true
         with:
-          project: ./
-          message: "Preview is ready! 🚀"
-          message-id: "expo-preview-test-unique-id"
+          project: tests/fixtures/expo-project
+          channel: staging
           comment: "false"
-      - name: Assert action ran (outputs set, or failed gracefully on the sentinel repo)
+          message: "Preview available at {projectLink} - scan QR: {projectQR}"
+          message-id: "custom-preview-{projectSlug}"
+
+      - name: Assert action ran with custom message or failed gracefully
         env:
           OUTCOME: ${{ steps.action.outcome }}
-          MESSAGE_ID: ${{ steps.action.outputs.messageId }}
           MESSAGE: ${{ steps.action.outputs.message }}
+          MESSAGE_ID: ${{ steps.action.outputs.messageId }}
+          PROJECT_LINK: ${{ steps.action.outputs.projectLink }}
         run: |
           echo "outcome: $OUTCOME"
-          echo "messageId: $MESSAGE_ID"
           echo "message: $MESSAGE"
+          echo "messageId: $MESSAGE_ID"
+          echo "projectLink: $PROJECT_LINK"
+
           if [ "$OUTCOME" = "success" ]; then
-            echo "PASS: action succeeded"
+            if [ -z "$MESSAGE" ]; then
+              echo "FAIL: message output is empty on success"
+              exit 1
+            fi
+            if [ -z "$MESSAGE_ID" ]; then
+              echo "FAIL: messageId output is empty on success"
+              exit 1
+            fi
+            echo "PASS: action succeeded with message='$MESSAGE' messageId='$MESSAGE_ID'"
           elif [ "$OUTCOME" = "failure" ]; then
-            echo "PASS: action failed gracefully (expected with sentinel repo or missing Expo config)"
+            echo "PASS: action failed gracefully (sentinel repo or Expo API not reachable)"
           else
             echo "FAIL: unexpected outcome '$OUTCOME'"
             exit 1

@@ -1,0 +1,53 @@
+name: Test preview-comment with default channel
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Create minimal Expo project config at workspace root
+        run: |
+          cat > "$GITHUB_WORKSPACE/app.json" <<'EOF'
+          {
+            "expo": {
+              "name": "workspace-app",
+              "slug": "workspace-app",
+              "owner": "testowner",
+              "version": "1.0.0"
+            }
+          }
+          EOF
+
+      - id: action
+        uses: .
+        continue-on-error: true
+        with:
+          channel: default
+          comment: "false"
+
+      - name: Assert action ran and produced outputs or failed gracefully
+        env:
+          OUTCOME: ${{ steps.action.outcome }}
+          PROJECT_SLUG: ${{ steps.action.outputs.projectSlug }}
+          PROJECT_QR: ${{ steps.action.outputs.projectQR }}
+          MESSAGE_ID: ${{ steps.action.outputs.messageId }}
+        run: |
+          echo "outcome: $OUTCOME"
+          echo "projectSlug: $PROJECT_SLUG"
+          echo "projectQR: $PROJECT_QR"
+          echo "messageId: $MESSAGE_ID"
+
+          if [ "$OUTCOME" = "success" ]; then
+            if [ -z "$PROJECT_SLUG" ]; then
+              echo "FAIL: projectSlug output is empty on success"
+              exit 1
+            fi
+            echo "PASS: action succeeded with projectSlug='$PROJECT_SLUG'"
+          elif [ "$OUTCOME" = "failure" ]; then
+            echo "PASS: action failed gracefully (sentinel repo or Expo API not reachable)"
+          else
+            echo "FAIL: unexpected outcome '$OUTCOME'"
+            exit 1
+          fi

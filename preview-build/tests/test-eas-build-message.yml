@@ -10,21 +10,21 @@ jobs:
         uses: .
         continue-on-error: true
         with:
-          command: eas build --platform ios --non-interactive
-          comment: "false"
+          command: "eas build --platform all --non-interactive"
+          comment: false
           eas-build-message: "Preview build for testing"
-          packager: yarn
-      - name: Assert action ran with eas-build-message input (outputs set, or failed gracefully)
+          github-token: ${{ github.token }}
+      - name: Assert action ran with eas-build-message input
         env:
           OUTCOME: ${{ steps.action.outcome }}
-          GIT_HASH: ${{ steps.action.outputs.gitCommitHash }}
+          PROJECT_ID: ${{ steps.action.outputs.projectId }}
         run: |
           echo "outcome: $OUTCOME"
-          echo "gitCommitHash: $GIT_HASH"
+          echo "projectId: $PROJECT_ID"
           if [ "$OUTCOME" = "success" ]; then
             echo "PASS: action succeeded"
           elif [ "$OUTCOME" = "failure" ]; then
-            echo "PASS: action failed gracefully (expected without EAS credentials or valid repo)"
+            echo "PASS: action failed gracefully (expected under sentinel repo / no EAS credentials)"
           else
             echo "FAIL: unexpected outcome '$OUTCOME'"
             exit 1

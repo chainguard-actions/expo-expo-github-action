@@ -1,4 +1,4 @@
-name: Test basic usage
+name: Test no-comment mode
 on:
   workflow_dispatch:
 jobs:
@@ -11,23 +11,23 @@ jobs:
         uses: .
         continue-on-error: true
         with:
-          command: "eas update --branch preview --message 'Test update'"
-          comment: "false"
+          command: eas build --platform ios --non-interactive
+          comment: false
           github-token: ${{ github.token }}
 
-      - name: Assert action ran (outputs set, or failed gracefully on sentinel/missing EAS credentials)
+      - name: Assert action ran with comment disabled
         env:
           OUTCOME: ${{ steps.action.outcome }}
-          PROJECT_ID: ${{ steps.action.outputs.projectId }}
-          COMMENT_OUT: ${{ steps.action.outputs.comment }}
+          COMMENT_ID: ${{ steps.action.outputs.commentId }}
+          COMMENT_OUTPUT: ${{ steps.action.outputs.comment }}
         run: |
           echo "outcome: $OUTCOME"
-          echo "projectId: $PROJECT_ID"
-          echo "comment: $COMMENT_OUT"
+          echo "commentId: $COMMENT_ID"
+          echo "comment output: $COMMENT_OUTPUT"
           if [ "$OUTCOME" = "success" ]; then
-            echo "PASS: action succeeded"
+            echo "PASS: action succeeded with comment disabled"
           elif [ "$OUTCOME" = "failure" ]; then
-            echo "PASS: action failed gracefully (expected without EAS credentials or with sentinel repo)"
+            echo "PASS: action failed gracefully (expected without EAS credentials/project)"
           else
             echo "FAIL: unexpected outcome '$OUTCOME'"
             exit 1

@@ -17,9 +17,13 @@ jobs:
         run: |
           echo "Checking EAS CLI installation..."
           if ! command -v eas &>/dev/null; then
-            echo "FAIL: eas command not found"
+            echo "FAIL: eas CLI not found in PATH"
             exit 1
           fi
           EAS_VERSION=$(eas --version 2>&1 || true)
           echo "EAS version: $EAS_VERSION"
+          if [ -z "$EAS_VERSION" ]; then
+            echo "FAIL: eas --version returned empty output"
+            exit 1
+          fi
           echo "PASS: EAS CLI is installed"
