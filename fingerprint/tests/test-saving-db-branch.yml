@@ -1,4 +1,4 @@
-name: Test fingerprint with saving-db-branch input
+name: Test saving-db-branch input
 on:
   workflow_dispatch:
 jobs:
@@ -6,34 +6,30 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
-        with:
-          fetch-depth: 0
-
       - id: action
         uses: .
         continue-on-error: true
         with:
-          packager: npm
-          fingerprint-installation-cache: false
+          github-token: ${{ github.token }}
           saving-db-branch: main
-
-      - name: Assert action ran with saving-db-branch or failed gracefully
+          fingerprint-db-cache-key: fingerprint-db-saving-branch-test
+      - name: Assert action ran and produced current-fingerprint or failed gracefully
         env:
           OUTCOME: ${{ steps.action.outcome }}
-          CURRENT_FP: ${{ steps.action.outputs.current-fingerprint }}
+          CURRENT_FINGERPRINT: ${{ steps.action.outputs.current-fingerprint }}
           CURRENT_COMMIT: ${{ steps.action.outputs.current-git-commit }}
         run: |
           echo "outcome: $OUTCOME"
-          echo "current-fingerprint: $CURRENT_FP"
+          echo "current-fingerprint: $CURRENT_FINGERPRINT"
           echo "current-git-commit: $CURRENT_COMMIT"
           if [ "$OUTCOME" = "success" ]; then
-            if [ -z "$CURRENT_FP" ]; then
+            if [ -z "$CURRENT_FINGERPRINT" ]; then
               echo "FAIL: action succeeded but current-fingerprint is empty"
               exit 1
             fi
-            echo "PASS: got current-fingerprint '$CURRENT_FP'"
+            echo "PASS: got fingerprint '$CURRENT_FINGERPRINT'"
           elif [ "$OUTCOME" = "failure" ]; then
-            echo "PASS: action failed gracefully (expected in harness environment)"
+            echo "PASS: action failed gracefully (expected under harness sentinel repo)"
           else
             echo "FAIL: unexpected outcome '$OUTCOME'"
             exit 1

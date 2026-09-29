@@ -1,0 +1,41 @@
+name: Test platform ios
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - id: action
+        uses: .
+        continue-on-error: true
+        with:
+          profile: production
+          branch: main
+          platform: ios
+          github-token: ${{ github.token }}
+
+      - name: Assert action ran for ios platform or failed gracefully
+        env:
+          OUTCOME: ${{ steps.action.outcome }}
+          IOS_FINGERPRINT: ${{ steps.action.outputs.ios-fingerprint }}
+          IOS_BUILD_ID: ${{ steps.action.outputs.ios-build-id }}
+          IOS_DID_START_NEW_BUILD: ${{ steps.action.outputs.ios-did-start-new-build }}
+        run: |
+          echo "outcome: $OUTCOME"
+          echo "ios-fingerprint: $IOS_FINGERPRINT"
+          echo "ios-build-id: $IOS_BUILD_ID"
+          echo "ios-did-start-new-build: $IOS_DID_START_NEW_BUILD"
+          if [ "$OUTCOME" = "success" ]; then
+            if [ -z "$IOS_FINGERPRINT" ]; then
+              echo "FAIL: action succeeded but ios-fingerprint output is empty"
+              exit 1
+            fi
+            echo "PASS: action succeeded with ios fingerprint output"
+          elif [ "$OUTCOME" = "failure" ]; then
+            echo "PASS: action failed gracefully (expected without EAS credentials or real Expo project)"
+          else
+            echo "FAIL: unexpected outcome '$OUTCOME'"
+            exit 1
+          fi

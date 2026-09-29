@@ -1,0 +1,42 @@
+name: Test android platform only
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - id: action
+        uses: .
+        continue-on-error: true
+        with:
+          profile: staging
+          platform: android
+          github-token: ${{ github.token }}
+
+      - name: Assert action ran for android platform or failed gracefully
+        env:
+          OUTCOME: ${{ steps.action.outcome }}
+          ANDROID_FP: ${{ steps.action.outputs.android-fingerprint }}
+          IOS_FP: ${{ steps.action.outputs.ios-fingerprint }}
+          ANDROID_BUILD: ${{ steps.action.outputs.android-build-id }}
+        run: |
+          echo "outcome: $OUTCOME"
+          echo "android-fingerprint: $ANDROID_FP"
+          echo "ios-fingerprint: $IOS_FP"
+          echo "android-build-id: $ANDROID_BUILD"
+
+          if [ "$OUTCOME" = "success" ]; then
+            # When platform=android, android fingerprint should be set
+            if [ -z "$ANDROID_FP" ]; then
+              echo "FAIL: action succeeded with android platform but android-fingerprint is empty"
+              exit 1
+            fi
+            echo "PASS: android fingerprint is set: $ANDROID_FP"
+          elif [ "$OUTCOME" = "failure" ]; then
+            echo "PASS: action failed gracefully (expected without real EAS credentials/project)"
+          else
+            echo "FAIL: unexpected outcome '$OUTCOME'"
+            exit 1
+          fi

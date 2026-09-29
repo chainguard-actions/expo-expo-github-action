@@ -1,0 +1,27 @@
+name: Test patch-watchers feature
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - id: action
+        uses: .
+        with:
+          eas-version: latest
+          eas-cache: false
+          packager: npm
+          patch-watchers: true
+      - name: Assert inotify watchers were patched
+        run: |
+          echo "Checking inotify max_user_watches..."
+          WATCHES=$(cat /proc/sys/fs/inotify/max_user_watches 2>/dev/null || echo "0")
+          echo "max_user_watches: $WATCHES"
+          # The action sets this to 524288
+          if [ "$WATCHES" -ge 524288 ]; then
+            echo "PASS: inotify max_user_watches is patched to $WATCHES"
+          else
+            echo "FAIL: inotify max_user_watches is $WATCHES, expected >= 524288"
+            exit 1
+          fi

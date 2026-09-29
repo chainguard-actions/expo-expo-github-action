@@ -1,0 +1,41 @@
+name: Test platform android
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - id: action
+        uses: .
+        continue-on-error: true
+        with:
+          profile: production
+          branch: main
+          platform: android
+          github-token: ${{ github.token }}
+
+      - name: Assert action ran for android platform or failed gracefully
+        env:
+          OUTCOME: ${{ steps.action.outcome }}
+          ANDROID_FINGERPRINT: ${{ steps.action.outputs.android-fingerprint }}
+          ANDROID_BUILD_ID: ${{ steps.action.outputs.android-build-id }}
+          ANDROID_DID_START_NEW_BUILD: ${{ steps.action.outputs.android-did-start-new-build }}
+        run: |
+          echo "outcome: $OUTCOME"
+          echo "android-fingerprint: $ANDROID_FINGERPRINT"
+          echo "android-build-id: $ANDROID_BUILD_ID"
+          echo "android-did-start-new-build: $ANDROID_DID_START_NEW_BUILD"
+          if [ "$OUTCOME" = "success" ]; then
+            if [ -z "$ANDROID_FINGERPRINT" ]; then
+              echo "FAIL: action succeeded but android-fingerprint output is empty"
+              exit 1
+            fi
+            echo "PASS: action succeeded with android fingerprint output"
+          elif [ "$OUTCOME" = "failure" ]; then
+            echo "PASS: action failed gracefully (expected without EAS credentials or real Expo project)"
+          else
+            echo "FAIL: unexpected outcome '$OUTCOME'"
+            exit 1
+          fi

@@ -1,0 +1,8 @@
+{
+  "expo": {
+    "name": "test-app",
+    "slug": "test-app",
+    "owner": "testowner",
+    "version": "1.0.0"
+  }
+}

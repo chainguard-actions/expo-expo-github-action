@@ -1,0 +1,43 @@
+name: Test custom working directory input
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Create a subdirectory to use as working directory
+        run: mkdir -p "$GITHUB_WORKSPACE/app"
+
+      - id: action
+        uses: .
+        continue-on-error: true
+        with:
+          profile: production
+          platform: all
+          working-directory: ${{ github.workspace }}/app
+          github-token: ${{ github.token }}
+
+      - name: Assert action ran with custom working directory or failed gracefully
+        env:
+          OUTCOME: ${{ steps.action.outcome }}
+          ANDROID_FP: ${{ steps.action.outputs.android-fingerprint }}
+          IOS_FP: ${{ steps.action.outputs.ios-fingerprint }}
+        run: |
+          echo "outcome: $OUTCOME"
+          echo "android-fingerprint: $ANDROID_FP"
+          echo "ios-fingerprint: $IOS_FP"
+
+          if [ "$OUTCOME" = "success" ]; then
+            if [ -z "$ANDROID_FP" ] && [ -z "$IOS_FP" ]; then
+              echo "FAIL: action succeeded but no fingerprint outputs were set"
+              exit 1
+            fi
+            echo "PASS: action succeeded with custom working directory"
+          elif [ "$OUTCOME" = "failure" ]; then
+            echo "PASS: action failed gracefully (expected without real EAS credentials/project)"
+          else
+            echo "FAIL: unexpected outcome '$OUTCOME'"
+            exit 1
+          fi

@@ -251,3 +251,7 @@ You can overwrite the token by adding the `GITHUB_TOKEN` environment variable or
 [link-gha-token]: https://docs.github.com/en/actions/security-guides/automatic-token-authentication#permissions-for-the-github_token
 [link-gha-trigger-pull]: https://docs.github.com/en/actions/using-workflows/events-that-trigger-workflows#pull_request
 [link-gha-trigger-push]: https://docs.github.com/en/actions/using-workflows/events-that-trigger-workflows#push
+
+## Privacy
+
+This Action contacts Chainguard's licensing server to verify authorization. Connection metadata (IP address, GitHub repository identifier, timestamp, and any metadata encoded in the auth token) is transmitted to Chainguard, Inc. even if authorization is denied in accordance with our [Privacy Notice](https://www.chainguard.dev/legal/privacy-notice)
