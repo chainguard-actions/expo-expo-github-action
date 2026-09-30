@@ -22,7 +22,7 @@ jobs:
           if [ "$OUTCOME" = "success" ]; then
             echo "PASS: action succeeded"
           elif [ "$OUTCOME" = "failure" ]; then
-            echo "PASS: action failed gracefully (no real Expo project/EAS credentials in harness)"
+            echo "PASS: action failed gracefully (expected without EAS credentials or valid project)"
           else
             echo "FAIL: unexpected outcome '$OUTCOME'"
             exit 1

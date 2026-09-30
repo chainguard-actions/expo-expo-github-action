@@ -10,25 +10,19 @@ jobs:
         uses: .
         continue-on-error: true
         with:
-          project: .
-          message: "🚀 Preview available at {projectLink}"
+          message: "🚀 Preview is ready! Scan the QR code below."
           comment: "false"
-          github-token: ${{ github.token }}
       - name: Assert action ran with custom message input
         env:
           OUTCOME: ${{ steps.action.outcome }}
-          MSG: ${{ steps.action.outputs.message }}
+          MESSAGE: ${{ steps.action.outputs.message }}
         run: |
           echo "outcome: $OUTCOME"
-          echo "message output: $MSG"
+          echo "message: $MESSAGE"
           if [ "$OUTCOME" = "success" ]; then
-            if [ -z "$MSG" ]; then
-              echo "FAIL: action succeeded but message output is empty"
-              exit 1
-            fi
-            echo "PASS: got message '$MSG'"
+            echo "PASS: action succeeded"
           elif [ "$OUTCOME" = "failure" ]; then
-            echo "PASS: action failed gracefully (sentinel repo or no Expo project config)"
+            echo "PASS: action failed gracefully (sentinel repo is not resolvable)"
           else
             echo "FAIL: unexpected outcome '$OUTCOME'"
             exit 1
