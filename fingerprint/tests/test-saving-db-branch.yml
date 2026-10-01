@@ -13,7 +13,8 @@ jobs:
           github-token: ${{ github.token }}
           saving-db-branch: main
           fingerprint-db-cache-key: fingerprint-db-saving-branch-test
-      - name: Assert action ran and produced current-fingerprint or failed gracefully
+          fingerprint-installation-cache: "false"
+      - name: Assert action ran with saving-db-branch input
         env:
           OUTCOME: ${{ steps.action.outcome }}
           CURRENT_FINGERPRINT: ${{ steps.action.outputs.current-fingerprint }}
@@ -24,7 +25,7 @@ jobs:
           echo "current-git-commit: $CURRENT_COMMIT"
           if [ "$OUTCOME" = "success" ]; then
             if [ -z "$CURRENT_FINGERPRINT" ]; then
-              echo "FAIL: action succeeded but current-fingerprint is empty"
+              echo "FAIL: action succeeded but current-fingerprint output is empty"
               exit 1
             fi
             echo "PASS: got fingerprint '$CURRENT_FINGERPRINT'"

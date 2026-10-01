@@ -11,7 +11,7 @@ jobs:
         with:
           expo-version: latest
           eas-version: latest
-          token: fake-expo-token
+          token: fake-expo-token-for-input-coverage
           patch-watchers: false
         continue-on-error: true
       - name: Assert action ran (token input accepted)

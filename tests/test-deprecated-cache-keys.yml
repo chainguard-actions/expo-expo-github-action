@@ -11,8 +11,8 @@ jobs:
         with:
           expo-version: latest
           eas-version: latest
-          expo-cache-key: my-custom-expo-cache-key
-          eas-cache-key: my-custom-eas-cache-key
+          expo-cache-key: custom-expo-cache-key
+          eas-cache-key: custom-eas-cache-key
           patch-watchers: false
         continue-on-error: true
       - name: Assert action ran (deprecated cache key inputs accepted)
