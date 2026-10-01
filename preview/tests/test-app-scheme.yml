@@ -10,10 +10,9 @@ jobs:
         uses: .
         continue-on-error: true
         with:
-          command: "eas update --branch preview --message 'Test update'"
-          comment: "false"
-          app-scheme: "myapp"
-          working-directory: ${{ github.workspace }}
+          command: eas update --branch preview --message "Test update"
+          app-scheme: myapp
+          github-token: ${{ github.token }}
       - name: Assert action ran with app-scheme input
         env:
           OUTCOME: ${{ steps.action.outcome }}
@@ -22,7 +21,7 @@ jobs:
           if [ "$OUTCOME" = "success" ]; then
             echo "PASS: action succeeded"
           elif [ "$OUTCOME" = "failure" ]; then
-            echo "PASS: action failed gracefully (expected in harness environment without EAS credentials)"
+            echo "PASS: action failed gracefully (no EAS credentials/project in test environment)"
           else
             echo "FAIL: unexpected outcome '$OUTCOME'"
             exit 1
