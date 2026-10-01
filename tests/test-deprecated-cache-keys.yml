@@ -10,11 +10,11 @@ jobs:
         uses: .
         with:
           expo-version: latest
-          expo-cache: false
           eas-version: latest
+          expo-cache: false
           eas-cache: false
-          expo-cache-key: custom-expo-cache-key
-          eas-cache-key: custom-eas-cache-key
+          expo-cache-key: my-custom-expo-cache-key
+          eas-cache-key: my-custom-eas-cache-key
           patch-watchers: false
         continue-on-error: true
       - name: Assert action ran (deprecated cache key inputs accepted)
@@ -23,7 +23,7 @@ jobs:
         run: |
           echo "outcome: $OUTCOME"
           if [ "$OUTCOME" = "success" ] || [ "$OUTCOME" = "failure" ]; then
-            echo "PASS: action ran with deprecated cache key inputs"
+            echo "PASS: action ran with deprecated cache key inputs (outcome: $OUTCOME)"
           else
             echo "FAIL: unexpected outcome '$OUTCOME'"
             exit 1
