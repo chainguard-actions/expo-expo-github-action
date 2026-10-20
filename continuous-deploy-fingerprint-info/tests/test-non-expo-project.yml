@@ -1,0 +1,41 @@
+name: Test non-Expo project directory
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - name: Create a minimal non-Expo project
+        run: |
+          mkdir -p "$GITHUB_WORKSPACE/non-expo-app"
+          cat > "$GITHUB_WORKSPACE/non-expo-app/package.json" <<'EOF'
+          { "name": "non-expo-app", "version": "1.0.0", "private": true }
+          EOF
+      - id: action
+        uses: .
+        continue-on-error: true
+        with:
+          profile: production
+          working-directory: non-expo-app
+      - name: Assert action failed gracefully or produced fingerprints
+        env:
+          OUTCOME: ${{ steps.action.outcome }}
+          ANDROID_FP: ${{ steps.action.outputs.android-fingerprint }}
+          IOS_FP: ${{ steps.action.outputs.ios-fingerprint }}
+        run: |
+          echo "outcome: $OUTCOME"
+          echo "android-fingerprint: $ANDROID_FP"
+          echo "ios-fingerprint: $IOS_FP"
+          if [ "$OUTCOME" = "success" ]; then
+            if [ -z "$ANDROID_FP" ] || [ -z "$IOS_FP" ]; then
+              echo "FAIL: action succeeded but fingerprint outputs are empty"
+              exit 1
+            fi
+            echo "PASS: fingerprints produced"
+          elif [ "$OUTCOME" = "failure" ]; then
+            echo "PASS: action failed as expected (no Expo project / EAS credentials)"
+          else
+            echo "FAIL: unexpected outcome '$OUTCOME'"
+            exit 1
+          fi

@@ -1,0 +1,50 @@
+name: Test default message template
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - name: Install fake expo CLI
+        run: |
+          mkdir -p "$RUNNER_TEMP/fakebin"
+          cat > "$RUNNER_TEMP/fakebin/expo" <<'EOF'
+          #!/bin/sh
+          case "$1" in
+            whoami)
+              echo "acme"
+              ;;
+            *)
+              exit 1
+              ;;
+          esac
+          EOF
+          chmod +x "$RUNNER_TEMP/fakebin/expo"
+          echo "$RUNNER_TEMP/fakebin" >> "$GITHUB_PATH"
+      - id: action
+        uses: .
+        with:
+          comment: "false"
+      - name: Assert default message and id are resolved
+        env:
+          MSGID: ${{ steps.action.outputs.messageId }}
+          MSG: ${{ steps.action.outputs.message }}
+          SLUG: ${{ steps.action.outputs.projectSlug }}
+          OWNER: ${{ steps.action.outputs.projectOwner }}
+        run: |
+          echo "messageId: $MSGID"
+          echo "message: $MSG"
+          echo "slug: $SLUG"
+          echo "owner: $OWNER"
+          if [ -z "$MSGID" ]; then echo "FAIL: messageId empty"; exit 1; fi
+          if [ -z "$MSG" ]; then echo "FAIL: message empty"; exit 1; fi
+          if [ -z "$SLUG" ]; then echo "FAIL: projectSlug empty"; exit 1; fi
+          if echo "$MSG$MSGID" | grep -qE '\{project(Owner|Name|Slug|QR|Link)\}'; then
+            echo "FAIL: unresolved template variables remain"
+            exit 1
+          fi
+          [ "$OWNER" = "acme" ] || { echo "FAIL: projectOwner should come from expo whoami"; exit 1; }
+          echo "$MSG" | grep -qF "@acme/$SLUG" || { echo "FAIL: default message missing @acme/$SLUG"; exit 1; }
+          echo "$MSGID" | grep -qF "@acme/$SLUG" || { echo "FAIL: default messageId missing @acme/$SLUG"; exit 1; }
+          echo "PASS"

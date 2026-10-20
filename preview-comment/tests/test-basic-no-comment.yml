@@ -1,0 +1,80 @@
+name: Test basic usage with comment disabled
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - name: Install fake expo CLI and project dir
+        run: |
+          mkdir -p "$RUNNER_TEMP/fakebin" "$GITHUB_WORKSPACE/expo-app"
+          cat > "$RUNNER_TEMP/fakebin/expo" <<'EOF'
+          #!/bin/sh
+          case "$1" in
+            whoami)
+              echo "test-owner"
+              ;;
+            *)
+              echo "unexpected expo args: $*" >&2
+              exit 1
+              ;;
+          esac
+          EOF
+          chmod +x "$RUNNER_TEMP/fakebin/expo"
+          echo "$RUNNER_TEMP/fakebin" >> "$GITHUB_PATH"
+          cat > "$GITHUB_WORKSPACE/expo-app/package.json" <<'EOF'
+          {
+            "name": "my-app",
+            "version": "1.0.0",
+            "private": true
+          }
+          EOF
+          cat > "$GITHUB_WORKSPACE/expo-app/app.json" <<'EOF'
+          {
+            "expo": {
+              "name": "my-app",
+              "slug": "my-app",
+              "owner": "test-owner",
+              "version": "1.0.0"
+            }
+          }
+          EOF
+      - id: action
+        uses: .
+        with:
+          project: expo-app
+          channel: pr-1
+          comment: "false"
+          message-id: "custom-id-{projectOwner}-{projectName}"
+          message: "Owner={projectOwner} Name={projectName} Slug={projectSlug}"
+      - name: Assert outputs
+        env:
+          OWNER: ${{ steps.action.outputs.projectOwner }}
+          NAME: ${{ steps.action.outputs.projectName }}
+          SLUG: ${{ steps.action.outputs.projectSlug }}
+          QR: ${{ steps.action.outputs.projectQR }}
+          LINK: ${{ steps.action.outputs.projectLink }}
+          MSGID: ${{ steps.action.outputs.messageId }}
+          MSG: ${{ steps.action.outputs.message }}
+        run: |
+          echo "owner: $OWNER"
+          echo "name: $NAME"
+          echo "slug: $SLUG"
+          echo "qr: $QR"
+          echo "link: $LINK"
+          echo "messageId: $MSGID"
+          echo "message: $MSG"
+          fail=0
+          [ "$OWNER" = "test-owner" ] || { echo "FAIL: projectOwner"; fail=1; }
+          [ "$NAME" = "my-app" ] || { echo "FAIL: projectName"; fail=1; }
+          [ "$SLUG" = "my-app" ] || { echo "FAIL: projectSlug"; fail=1; }
+          echo "$LINK" | grep -q "^https://" || { echo "FAIL: projectLink not absolute URL"; fail=1; }
+          echo "$LINK" | grep -q "@test-owner/my-app" || { echo "FAIL: projectLink missing owner/slug"; fail=1; }
+          echo "$LINK" | grep -q "pr-1" || { echo "FAIL: projectLink missing channel"; fail=1; }
+          echo "$QR" | grep -q "^https://" || { echo "FAIL: projectQR not absolute URL"; fail=1; }
+          echo "$QR" | grep -q "owner=test-owner" || { echo "FAIL: projectQR missing owner"; fail=1; }
+          [ "$MSGID" = "custom-id-test-owner-my-app" ] || { echo "FAIL: messageId"; fail=1; }
+          [ "$MSG" = "Owner=test-owner Name=my-app Slug=my-app" ] || { echo "FAIL: message"; fail=1; }
+          if [ "$fail" -ne 0 ]; then exit 1; fi
+          echo "PASS"

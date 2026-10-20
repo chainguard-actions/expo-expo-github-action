@@ -1,0 +1,30 @@
+name: Test deprecated inputs are ignored
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - id: action
+        uses: .
+        with:
+          eas-cache-key: custom-eas-key
+          expo-cache-key: custom-expo-key
+          username: deprecated-user
+          password: deprecated-password
+          patch-watchers: 'false'
+      - name: Assert action succeeded and did not authenticate
+        env:
+          OUTCOME: ${{ steps.action.outcome }}
+        run: |
+          echo "outcome: $OUTCOME"
+          if [ "$OUTCOME" != "success" ]; then
+            echo "FAIL: expected success"
+            exit 1
+          fi
+          if [ -n "$EXPO_TOKEN" ]; then
+            echo "FAIL: EXPO_TOKEN should not be set from username/password"
+            exit 1
+          fi
+          echo "PASS"

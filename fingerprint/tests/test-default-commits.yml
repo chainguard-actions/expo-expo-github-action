@@ -1,0 +1,28 @@
+name: Test fingerprint with default commit detection
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          fetch-depth: 0
+      - id: action
+        uses: .
+        with:
+          packager: npm
+          working-directory: tests/fixtures/expo-app
+          fingerprint-installation-cache: "false"
+          saving-db-branch: main
+      - name: Assert outputs
+        env:
+          CUR: ${{ steps.action.outputs.current-git-commit }}
+          FP: ${{ steps.action.outputs.current-fingerprint }}
+        run: |
+          echo "current-git-commit: $CUR"
+          echo "current-fingerprint: $FP"
+          if ! echo "$CUR" | grep -qE '^[0-9a-f]{40}$'; then echo "FAIL: current-git-commit is not a sha"; exit 1; fi
+          if [ -z "$FP" ]; then echo "FAIL: current-fingerprint empty"; exit 1; fi
+          if ! echo "$FP" | grep -q '"hash"'; then echo "FAIL: no hash in fingerprint"; exit 1; fi
+          echo "PASS"

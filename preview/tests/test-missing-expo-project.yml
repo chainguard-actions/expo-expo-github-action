@@ -1,0 +1,37 @@
+name: Test missing Expo project fails
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - name: Prepare non-Expo directory
+        run: |
+          mkdir -p "$GITHUB_WORKSPACE/not-an-expo-app"
+          echo '{"name":"not-expo","version":"1.0.0"}' > "$GITHUB_WORKSPACE/not-an-expo-app/package.json"
+      - id: action
+        uses: .
+        continue-on-error: true
+        with:
+          command: eas update --auto
+          comment: "false"
+          working-directory: not-an-expo-app
+      - name: Assert action failed without producing outputs
+        env:
+          OUTCOME: ${{ steps.action.outcome }}
+          GROUP: ${{ steps.action.outputs.groupId }}
+          LINK: ${{ steps.action.outputs.link }}
+        run: |
+          echo "outcome: $OUTCOME"
+          echo "groupId: $GROUP"
+          echo "link: $LINK"
+          if [ "$OUTCOME" != "failure" ]; then
+            echo "FAIL: expected failure for a directory without an Expo project"
+            exit 1
+          fi
+          if [ -n "$GROUP" ] || [ -n "$LINK" ]; then
+            echo "FAIL: no update outputs should be set"
+            exit 1
+          fi
+          echo "PASS"

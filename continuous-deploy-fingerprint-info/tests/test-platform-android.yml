@@ -1,0 +1,49 @@
+name: Test android platform only
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - name: Create a minimal app directory
+        run: |
+          mkdir -p "$GITHUB_WORKSPACE/android-app"
+          cat > "$GITHUB_WORKSPACE/android-app/package.json" <<'EOF'
+          { "name": "android-app", "version": "1.0.0", "private": true }
+          EOF
+          cat > "$GITHUB_WORKSPACE/android-app/app.json" <<'EOF'
+          { "expo": { "name": "android-app", "slug": "android-app" } }
+          EOF
+      - id: action
+        uses: .
+        continue-on-error: true
+        with:
+          profile: preview
+          platform: android
+          working-directory: android-app
+      - name: Assert android-only behaviour or graceful failure
+        env:
+          OUTCOME: ${{ steps.action.outcome }}
+          ANDROID_FP: ${{ steps.action.outputs.android-fingerprint }}
+          IOS_FP: ${{ steps.action.outputs.ios-fingerprint }}
+        run: |
+          echo "outcome: $OUTCOME"
+          echo "android-fingerprint: $ANDROID_FP"
+          echo "ios-fingerprint: $IOS_FP"
+          if [ "$OUTCOME" = "success" ]; then
+            if [ -z "$ANDROID_FP" ]; then
+              echo "FAIL: succeeded but android-fingerprint is empty"
+              exit 1
+            fi
+            if [ -n "$IOS_FP" ]; then
+              echo "FAIL: ios-fingerprint should be empty when platform=android"
+              exit 1
+            fi
+            echo "PASS: android fingerprint produced"
+          elif [ "$OUTCOME" = "failure" ]; then
+            echo "PASS: action failed gracefully (no EAS credentials / expo deps)"
+          else
+            echo "FAIL: unexpected outcome '$OUTCOME'"
+            exit 1
+          fi

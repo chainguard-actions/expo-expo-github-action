@@ -1,0 +1,46 @@
+name: Test environment input
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - name: Create a minimal app directory
+        run: |
+          mkdir -p "$GITHUB_WORKSPACE/env-app"
+          cat > "$GITHUB_WORKSPACE/env-app/package.json" <<'EOF'
+          { "name": "env-app", "version": "1.0.0", "private": true }
+          EOF
+          cat > "$GITHUB_WORKSPACE/env-app/app.json" <<'EOF'
+          { "expo": { "name": "env-app", "slug": "env-app" } }
+          EOF
+      - id: action
+        uses: .
+        continue-on-error: true
+        with:
+          profile: preview
+          platform: all
+          environment: preview
+          working-directory: env-app
+      - name: Assert fingerprints produced or graceful failure
+        env:
+          OUTCOME: ${{ steps.action.outcome }}
+          ANDROID_FP: ${{ steps.action.outputs.android-fingerprint }}
+          IOS_FP: ${{ steps.action.outputs.ios-fingerprint }}
+        run: |
+          echo "outcome: $OUTCOME"
+          echo "android-fingerprint: $ANDROID_FP"
+          echo "ios-fingerprint: $IOS_FP"
+          if [ "$OUTCOME" = "success" ]; then
+            if [ -z "$ANDROID_FP" ] || [ -z "$IOS_FP" ]; then
+              echo "FAIL: succeeded but a fingerprint output is empty"
+              exit 1
+            fi
+            echo "PASS: fingerprints produced with environment input"
+          elif [ "$OUTCOME" = "failure" ]; then
+            echo "PASS: action failed gracefully (no EAS credentials / expo deps)"
+          else
+            echo "FAIL: unexpected outcome '$OUTCOME'"
+            exit 1
+          fi

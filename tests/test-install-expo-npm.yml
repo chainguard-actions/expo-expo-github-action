@@ -1,0 +1,28 @@
+name: Test install expo-cli with npm
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - id: action
+        uses: .
+        with:
+          expo-version: 6.3.10
+          expo-cache: 'false'
+          packager: npm
+          patch-watchers: 'false'
+      - name: Assert expo-cli placed in tool cache and on PATH
+        run: |
+          if [ ! -d "$RUNNER_TOOL_CACHE/expo-cli/6.3.10" ]; then
+            echo "FAIL: $RUNNER_TOOL_CACHE/expo-cli/6.3.10 not found"
+            ls -la "$RUNNER_TOOL_CACHE" || true
+            exit 1
+          fi
+          if ! command -v expo >/dev/null 2>&1 && ! command -v expo-cli >/dev/null 2>&1; then
+            echo "FAIL: expo not found on PATH"
+            echo "PATH=$PATH"
+            exit 1
+          fi
+          echo "PASS"

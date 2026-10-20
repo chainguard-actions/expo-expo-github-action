@@ -1,0 +1,53 @@
+name: Test fingerprint with same previous and current commit
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          fetch-depth: 0
+      - name: Resolve HEAD sha
+        id: sha
+        run: echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+      - id: action
+        uses: .
+        with:
+          packager: npm
+          working-directory: tests/fixtures/expo-app
+          fingerprint-installation-cache: "false"
+          saving-db-branch: main
+          previous-git-commit: ${{ steps.sha.outputs.sha }}
+          current-git-commit: ${{ steps.sha.outputs.sha }}
+      - name: Assert git commit outputs
+        env:
+          SHA: ${{ steps.sha.outputs.sha }}
+          CUR: ${{ steps.action.outputs.current-git-commit }}
+          PREV: ${{ steps.action.outputs.previous-git-commit }}
+        run: |
+          echo "sha: $SHA current: $CUR previous: $PREV"
+          if [ "$CUR" != "$SHA" ]; then echo "FAIL: current-git-commit mismatch"; exit 1; fi
+          if [ "$PREV" != "$SHA" ]; then echo "FAIL: previous-git-commit mismatch"; exit 1; fi
+          echo "PASS"
+      - name: Assert current fingerprint
+        env:
+          FP: ${{ steps.action.outputs.current-fingerprint }}
+        run: |
+          echo "current-fingerprint: $FP"
+          if [ -z "$FP" ]; then echo "FAIL: current-fingerprint empty"; exit 1; fi
+          if ! echo "$FP" | grep -q '"hash"'; then echo "FAIL: no hash in fingerprint"; exit 1; fi
+          echo "PASS"
+      - name: Assert no diff
+        env:
+          ACTUAL: ${{ steps.action.outputs.fingerprint-diff }}
+        run: |
+          echo "actual: $ACTUAL"
+          NORM="$(echo "$ACTUAL" | tr -d '[:space:]')"
+          if [ -z "$NORM" ] || [ "$NORM" = "{}" ] || [ "$NORM" = "[]" ] || [ "$NORM" = "null" ] \
+             || echo "$ACTUAL" | grep -qiE 'no .*(change|diff)'; then
+            echo "PASS: no diff as expected"
+          else
+            echo "FAIL: expected no diff but got: $ACTUAL"
+            exit 1
+          fi

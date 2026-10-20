@@ -1,0 +1,38 @@
+name: Test install eas-cli with npm
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - id: action
+        uses: .
+        with:
+          eas-version: 16.0.0
+          eas-cache: 'false'
+          packager: npm
+          patch-watchers: 'false'
+      - name: Assert eas is installed on PATH with the requested version
+        run: |
+          if ! command -v eas >/dev/null 2>&1; then
+            echo "FAIL: eas not found on PATH"
+            echo "PATH=$PATH"
+            exit 1
+          fi
+          echo "eas at: $(command -v eas)"
+          ACTUAL="$(eas --version 2>/dev/null || true)"
+          echo "actual: $ACTUAL"
+          if ! echo "$ACTUAL" | grep -q "eas-cli/16.0.0"; then
+            echo "FAIL: expected eas-cli/16.0.0"
+            exit 1
+          fi
+          echo "PASS"
+      - name: Assert tool was placed in the runner tool cache
+        run: |
+          if [ ! -d "$RUNNER_TOOL_CACHE/eas-cli/16.0.0" ]; then
+            echo "FAIL: $RUNNER_TOOL_CACHE/eas-cli/16.0.0 not found"
+            ls -la "$RUNNER_TOOL_CACHE" || true
+            exit 1
+          fi
+          echo "PASS"
