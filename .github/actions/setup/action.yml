@@ -15,11 +15,11 @@ runs:
   steps:
     - name: 🏗 Setup Bun
       if: ${{ runner.os != 'Windows' }}
-      uses: oven-sh/setup-bun@f4d14e03ff726c06358e5557344e1da148b56cf7 # v1
+      uses: oven-sh/setup-bun@v1
       with:
         bun-version: ${{ inputs.bun-version }}
 
     - name: 🏗 Setup Node
-      uses: actions/setup-node@3235b876344d2a9aa001b8d1453c930bba69e610 # v3
+      uses: actions/setup-node@v3
       with:
         node-version: ${{ inputs.node-version }}
