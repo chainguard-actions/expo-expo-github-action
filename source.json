@@ -1,6 +1,11 @@
 {
   "owner": "expo",
   "repo": "expo-github-action",
-  "version": "",
-  "url": "https://github.com/expo/expo-github-action"
+  "version": "9.0.2",
+  "commit_sha": "5273c2136bd09c2a341fe3340d3e767ce5a13015",
+  "url": "https://github.com/expo/expo-github-action",
+  "policy_sha": "374911c4be584df24e6da57af2d990570ef0f859",
+  "test_policy_sha": "843adf9e4b8f85d0c08b27b9d0b09dd094b54702",
+  "test_agent_version": "2",
+  "harden_agent_version": "2"
 }
